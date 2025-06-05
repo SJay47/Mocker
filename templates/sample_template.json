@@ -1,0 +1,50 @@
+{
+  "data": {
+    "type": 0,
+    "version": "string",
+    "candidateSearchVisibility": 0,
+    "isAnonymous": true,
+    "rawFingerprintJson": {
+      "fingerprint": {
+        "name": "string",
+        "description": "string",
+        "recordSet": [
+          {
+            "@id": "demographics",
+            "@type": "cr:RecordSet",
+            "name": "Demographics",
+            "description": "Demographics of the patient",
+            "recordCount": 1000,
+            "field": [
+              {
+                "@id": "demographics/age",
+                "@type": "cr:Field",
+                "name": "Age",
+                "description": "Age of the patient",
+                "dataType": "sc:Integer",
+                "unit": "years",
+                "statistics": {
+                  "min": 30,
+                  "max": 76,
+                  "mean": 46,
+                  "median": 67,
+                  "stdDev": 8,
+                  "uniqueCount": 50,
+                  "nullCount": 3,
+                  "percentiles": {
+                    "p25": 30,
+                    "p50": 45,
+                    "p75": 60
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "comparisonMode": 0
+    }
+  },
+  "requestId": "string",
+  "timestamp": "2025-03-21T13:21:35.558Z"
+}
