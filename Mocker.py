@@ -8,9 +8,10 @@ from typing import Any, Dict, Optional
 import requests
 from faker import Faker
 
+# Initialize Faker
 fake = Faker()
 
-# API Configuration
+# API Configuration (update with your actual values)
 API_CONFIG = {
     "API_BASE_URL": "http://localhost",
     "KEYCLOAK_TOKEN_URL": "http://localhost:18080/realms/primecare/protocol/openid-connect/token",
@@ -18,162 +19,165 @@ API_CONFIG = {
     "ADMIN_USERNAME": "alice@demo.com",
     "ADMIN_PASSWORD": "q",
     "ORGANIZATION_ID": "b563a085-e9b1-4bec-8570-f20dca7ccda4",
-    "DATASET_ID": "9aca8d38-98a2-42fa-af09-8c842b8f127e",
+    "DATASET_ID": "ce83ce9c-0349-436f-80bf-a165cea5f905",
 }
 
 
-def fake_recordset_fields(data):
+def custom_generate(data: Any) -> Any:
     """
-    Recursively replace every string value in a recordSet with a fake value.
-    """
-    if isinstance(data, dict):
-        new_dict = {}
-        for k, v in data.items():
-            if isinstance(v, str):
-                new_dict[k] = fake.bs()
-            elif isinstance(v, dict | list):
-                new_dict[k] = fake_recordset_fields(v)
-            else:
-                new_dict[k] = v
-        return new_dict
-    if isinstance(data, list):
-        return [
-            fake_recordset_fields(item)
-            if isinstance(item, dict | list)
-            else (fake.bs() if isinstance(item, str) else item)
-            for item in data
-        ]
-    return fake.bs() if isinstance(data, str) else data
+    Recursively processes JSON data to mock ONLY the numerical values within
+    'statistics' blocks, based on the Croissant fingerprint format.
 
-
-def custom_generate(data):
-    """
-    Process the JSON data to mock ONLY:
-    - statistics and percentiles fields with random integer values (min and max values range from 0-100)
-
-    All other fields are left unchanged, including:
-    - fingerprint (name, description)
-    - recordSet and its nested fields
-    - fields and their properties
-
-    Preserves the original value of datasetId at any level.
+    - All textual fields ('name', 'description', etc.) are preserved.
+    - Differentiates between numerical and categorical statistics.
+    - In 'category_frequencies', it preserves the category names (keys) and
+      only mocks their numerical counts (values).
     """
     if isinstance(data, dict):
         new_data = {}
         for key, value in data.items():
-            # Handle statistics fields
-            if key.lower() == "statistics":
-                if isinstance(value, dict):
-                    # Create new statistics with min and max values between 0-100
-                    min_val = fake.random_int(min=0, max=40)
-                    max_val = fake.random_int(min=60, max=100)
+            # Main logic for mocking only the 'statistics' block
+            if key.lower() == "statistics" and isinstance(value, dict):
+                stats_data = value.copy()  # Work on a copy of the original statistics
+                new_stats = stats_data.copy()
 
-                    # Generate random statistics values based on min and max
-                    mean_val = fake.random_int(min=min_val + 10, max=max_val - 10)
-                    median_val = fake.random_int(min=min_val + 5, max=max_val - 5)
-                    std_dev = fake.random_int(min=5, max=20)
-                    unique_count = fake.random_int(min=50, max=95)
-                    null_count = fake.random_int(min=0, max=20)
+                # --- Numerical Field Mocking ---
+                # Check for 'min' key to identify numerical stats blocks.
+                if "min" in stats_data:
+                    is_float = isinstance(stats_data.get("min"), float) or isinstance(
+                        stats_data.get("mean"), float
+                    )
 
-                    new_stats = {}
-                    for stat_key, stat_value in value.items():
-                        if stat_key.lower() == "min":
-                            new_stats[stat_key] = min_val
-                        elif stat_key.lower() == "max":
-                            new_stats[stat_key] = max_val
-                        elif stat_key.lower() == "mean":
-                            new_stats[stat_key] = mean_val
-                        elif stat_key.lower() == "median":
-                            new_stats[stat_key] = median_val
-                        elif stat_key.lower() == "stddev":
-                            new_stats[stat_key] = std_dev
-                        elif stat_key.lower() == "uniquecount":
-                            new_stats[stat_key] = unique_count
-                        elif stat_key.lower() == "nullcount":
-                            new_stats[stat_key] = null_count
-                        elif stat_key.lower() == "percentiles":
-                            # Generate random percentile values that make sense (ascending order)
-                            # Ensure we have enough range between values
-                            range_size = max_val - min_val
+                    if is_float:
+                        min_val = fake.pyfloat(
+                            min_value=10, max_value=40, right_digits=2
+                        )
+                        max_val = fake.pyfloat(
+                            min_value=min_val + 50, max_value=150, right_digits=2
+                        )
+                    else:
+                        min_val = fake.random_int(min=10, max=40)
+                        max_val = fake.random_int(min=min_val + 50, max=100)
 
-                            # Divide the range into four parts to ensure ascending values
-                            p25_max = min_val + (range_size // 3)
-                            p25 = fake.random_int(min=min_val, max=p25_max)
+                    # Generate consistent percentiles/quartiles
+                    p5 = fake.pyfloat(
+                        min_value=min_val,
+                        max_value=min_val + (max_val - min_val) * 0.1,
+                        right_digits=2,
+                    )
+                    q1 = fake.pyfloat(
+                        min_value=p5,
+                        max_value=min_val + (max_val - min_val) * 0.3,
+                        right_digits=2,
+                    )
+                    median = fake.pyfloat(
+                        min_value=q1,
+                        max_value=min_val + (max_val - min_val) * 0.6,
+                        right_digits=2,
+                    )
+                    q3 = fake.pyfloat(
+                        min_value=median, max_value=max_val * 0.9, right_digits=2
+                    )
+                    p95 = fake.pyfloat(min_value=q3, max_value=max_val, right_digits=2)
+                    mean_val = fake.pyfloat(min_value=q1, max_value=q3, right_digits=2)
 
-                            p50_min = p25 + 1
-                            p50_max = min_val + (2 * range_size // 3)
-                            p50 = fake.random_int(min=p50_min, max=p50_max)
+                    # Overwrite numerical values in the new_stats dictionary
+                    for stat_key in new_stats:
+                        if stat_key == "min":
+                            new_stats[stat_key] = (
+                                round(min_val) if not is_float else min_val
+                            )
+                        elif stat_key == "max":
+                            new_stats[stat_key] = (
+                                round(max_val) if not is_float else max_val
+                            )
+                        elif stat_key == "mean":
+                            new_stats[stat_key] = (
+                                round(mean_val) if not is_float else mean_val
+                            )
+                        elif stat_key == "median":
+                            new_stats[stat_key] = (
+                                round(median) if not is_float else median
+                            )
+                        elif stat_key == "stdDev":
+                            new_stats[stat_key] = fake.pyfloat(
+                                min_value=5, max_value=20, right_digits=2
+                            )
+                        elif stat_key == "unique_count":
+                            new_stats[stat_key] = fake.random_int(min=20, max=100)
+                        elif stat_key == "missing_count":
+                            new_stats[stat_key] = fake.random_int(min=0, max=50)
+                        elif stat_key == "quartile_1":
+                            new_stats[stat_key] = round(q1) if not is_float else q1
+                        elif stat_key == "quartile_3":
+                            new_stats[stat_key] = round(q3) if not is_float else q3
+                        elif stat_key == "percentile_5":
+                            new_stats[stat_key] = round(p5) if not is_float else p5
+                        elif stat_key == "percentile_95":
+                            new_stats[stat_key] = round(p95) if not is_float else p95
+                        elif stat_key == "skewness":
+                            new_stats[stat_key] = fake.pyfloat(
+                                min_value=-1, max_value=1, right_digits=2
+                            )
+                        elif stat_key == "kurtosis":
+                            new_stats[stat_key] = fake.pyfloat(
+                                min_value=-1, max_value=1, right_digits=2
+                            )
+                        elif stat_key == "histogram" and isinstance(
+                            stats_data[stat_key], dict
+                        ):
+                            original_hist = stats_data[stat_key]
+                            if "counts" in original_hist:
+                                num_counts = len(original_hist["counts"])
+                                new_stats[stat_key]["counts"] = [
+                                    fake.random_int(min=100, max=2000)
+                                    for _ in range(num_counts)
+                                ]
 
-                            p75_min = p50 + 1
-                            p75 = fake.random_int(min=p75_min, max=max_val)
+                # --- Categorical Field Mocking ---
+                # Check for 'mode' key to identify categorical stats blocks.
+                elif "mode" in stats_data:
+                    for stat_key in new_stats:
+                        # Mock only the numerical values
+                        if stat_key in [
+                            "unique_count",
+                            "missing_count",
+                            "mode_frequency",
+                        ]:
+                            new_stats[stat_key] = fake.random_int(min=0, max=5000)
+                        elif stat_key == "entropy":
+                            new_stats[stat_key] = fake.pyfloat(
+                                min_value=0.5, max_value=3.0, right_digits=2
+                            )
+                        # For category_frequencies, keep keys and mock values
+                        elif stat_key == "category_frequencies" and isinstance(
+                            stats_data[stat_key], dict
+                        ):
+                            original_cats = stats_data[stat_key]
+                            mocked_cats = {}
+                            for category_name in original_cats:
+                                mocked_cats[category_name] = fake.random_int(
+                                    min=100, max=3000
+                                )
+                            new_stats[stat_key] = mocked_cats
 
-                            if isinstance(stat_value, dict):
-                                new_percentiles = {}
-                                for perc_key, perc_value in stat_value.items():
-                                    if perc_key.lower() == "p25":
-                                        new_percentiles[perc_key] = p25
-                                    elif perc_key.lower() == "p50":
-                                        new_percentiles[perc_key] = p50
-                                    elif perc_key.lower() == "p75":
-                                        new_percentiles[perc_key] = p75
-                                    else:
-                                        new_percentiles[perc_key] = perc_value
-                                new_stats[stat_key] = new_percentiles
-                            else:
-                                new_stats[stat_key] = stat_value
-                        else:
-                            # For any other statistics fields, keep them as is
-                            new_stats[stat_key] = stat_value
-                    new_data[key] = new_stats
-                else:
-                    new_data[key] = value
-            # Handle percentiles fields
-            elif key.lower() == "percentiles":
-                if isinstance(value, dict):
-                    # Generate random percentile values that make sense (ascending order)
-                    p25 = fake.random_int(min=10, max=30)
-                    p50 = fake.random_int(min=p25 + 1, max=60)
-                    p75 = fake.random_int(min=p50 + 1, max=90)
-
-                    new_percentiles = {}
-                    for perc_key, perc_value in value.items():
-                        if perc_key.lower() == "p25":
-                            new_percentiles[perc_key] = p25
-                        elif perc_key.lower() == "p50":
-                            new_percentiles[perc_key] = p50
-                        elif perc_key.lower() == "p75":
-                            new_percentiles[perc_key] = p75
-                        else:
-                            new_percentiles[perc_key] = perc_value
-                    new_data[key] = new_percentiles
-                else:
-                    new_data[key] = value
-            # For all other fields, preserve them but process any nested dictionaries or lists
+                new_data[key] = new_stats
             else:
-                if isinstance(value, dict):
-                    new_data[key] = custom_generate(value)
-                elif isinstance(value, list):
-                    new_data[key] = [
-                        custom_generate(item) if isinstance(item, dict | list) else item
-                        for item in value
-                    ]
-                else:
-                    # Keep all other values unchanged
-                    new_data[key] = value
+                # For all other fields, preserve them but process nested structures
+                new_data[key] = custom_generate(value)
         return new_data
+
     if isinstance(data, list):
-        return [
-            custom_generate(item) if isinstance(item, dict | list) else item
-            for item in data
-        ]
-    return data  # Return primitive values unchanged
+        return [custom_generate(item) for item in data]
+
+    # Return all primitive values (strings, numbers, etc.) and non-dict/list items unchanged
+    return data
 
 
-def save_mocked_fingerprint(fp: dict, filename: str):
+def save_mocked_fingerprint(fp: dict, filename: str, output_dir: Path):
     """
-    Save the fingerprint JSON to a file inside the 'mock_fingerprints' folder.
+    Save the fingerprint JSON to a file inside the specified folder.
     """
-    output_dir = Path("mock_fingerprints")
     output_dir.mkdir(parents=True, exist_ok=True)
     file_path = output_dir / filename
     with file_path.open("w", encoding="utf-8") as f:
@@ -201,22 +205,16 @@ def get_access_token() -> Optional[str]:
     Authenticate with Keycloak and get an access token.
     """
     token_url = API_CONFIG["KEYCLOAK_TOKEN_URL"]
-    client_id = API_CONFIG["KEYCLOAK_CLIENT_ID"]
-    username = API_CONFIG["ADMIN_USERNAME"]
-    password = API_CONFIG["ADMIN_PASSWORD"]
-
     payload = {
-        "client_id": client_id,
+        "client_id": API_CONFIG["KEYCLOAK_CLIENT_ID"],
         "grant_type": "password",
-        "username": username,
-        "password": password,
+        "username": API_CONFIG["ADMIN_USERNAME"],
+        "password": API_CONFIG["ADMIN_PASSWORD"],
     }
-
     try:
-        response = requests.post(token_url, data=payload)
+        response = requests.post(token_url, data=payload, timeout=10)
         response.raise_for_status()
-        token_data = response.json()
-        return token_data.get("access_token")
+        return response.json().get("access_token")
     except requests.RequestException as e:
         print(f"Authentication error: {e}")
         return None
@@ -226,13 +224,9 @@ def post_fingerprint(fingerprint: Dict[str, Any], access_token: str) -> bool:
     """
     POST the fingerprint to the API.
     """
-    organization_id = API_CONFIG["ORGANIZATION_ID"]
+    org_id = API_CONFIG["ORGANIZATION_ID"]
     dataset_id = API_CONFIG["DATASET_ID"]
-    api_url = f"{API_CONFIG['API_BASE_URL']}/api/organizations/{organization_id}/datasets/{dataset_id}/fingerprints"
-
-    # Ensure the fingerprint data contains the dataset ID
-    if "data" in fingerprint and isinstance(fingerprint["data"], dict):
-        fingerprint["data"]["datasetId"] = dataset_id
+    api_url = f"{API_CONFIG['API_BASE_URL']}/api/organizations/{org_id}/datasets/{dataset_id}/fingerprints"
 
     headers = {
         "Authorization": f"Bearer {access_token}",
@@ -240,7 +234,7 @@ def post_fingerprint(fingerprint: Dict[str, Any], access_token: str) -> bool:
     }
 
     try:
-        response = requests.post(api_url, json=fingerprint, headers=headers)
+        response = requests.post(api_url, json=fingerprint, headers=headers, timeout=15)
         response.raise_for_status()
         print(f"Successfully posted fingerprint. Response: {response.status_code}")
         return True
@@ -256,144 +250,99 @@ def parse_arguments():
     """
     Parse command line arguments.
     """
-    parser = argparse.ArgumentParser(description="Generate and send mock fingerprints.")
+    parser = argparse.ArgumentParser(
+        description="Generate and send mock Croissant fingerprints."
+    )
     parser.add_argument(
         "--count",
         "-c",
         type=int,
-        default=None,
-        help="Number of mock fingerprints to generate from each template.",
+        default=10,
+        help="Number of mocks to generate per template.",
     )
     parser.add_argument(
         "--send",
         "-s",
         action="store_true",
-        help="Send the generated fingerprints to the API.",
+        help="Send generated fingerprints to the API.",
     )
     parser.add_argument(
         "--templates-dir",
         "-t",
         type=str,
         default="templates",
-        help="Directory containing the template JSON files.",
+        help="Directory for template JSON files.",
     )
     parser.add_argument(
         "--output-dir",
         "-o",
         type=str,
         default="mock_fingerprints",
-        help="Directory to save the generated mock fingerprints.",
+        help="Directory to save generated mocks.",
     )
-
     return parser.parse_args()
 
 
 def main():
-    # Parse command line arguments
     args = parse_arguments()
 
-    # If count is not provided, ask the user
-    mock_count = args.count
-    if mock_count is None:
-        try:
-            mock_count = int(
-                input(
-                    "Enter the number of mock fingerprints to generate from each template: "
-                )
-            )
-            if mock_count <= 0:
-                print("Number of mocks must be greater than 0.")
-                return
-        except ValueError:
-            print("Please enter a valid number.")
-            return
-
-    # Define the templates directory
     templates_dir = Path(args.templates_dir)
     output_dir = Path(args.output_dir)
 
-    # Check if templates directory exists
-    if not templates_dir.exists():
-        print(f"Templates directory '{templates_dir}' not found. Creating it...")
-        templates_dir.mkdir(parents=True, exist_ok=True)
-        print(f"Please add JSON template files to the '{templates_dir}' directory.")
+    if not templates_dir.exists() or not any(templates_dir.iterdir()):
+        print(
+            f"Templates directory '{templates_dir}' is missing or empty. Creating it."
+        )
+        templates_dir.mkdir(exist_ok=True)
+        print(
+            f"Please add your 'Example fingerprint.json' to the '{templates_dir}' directory and rerun."
+        )
         return
 
-    # Get all JSON files from the templates directory
     json_files = list(templates_dir.glob("*.json"))
-
     if not json_files:
-        print(f"No JSON files found in '{templates_dir}' directory.")
-        print("Please add JSON template files to continue.")
+        print(f"No JSON files found in '{templates_dir}'.")
         return
 
-    print(f"Found {len(json_files)} JSON template(s) to process.")
-    print(f"Will generate {mock_count} mock(s) from each template.")
+    print(
+        f"Found {len(json_files)} JSON template(s). Generating {args.count} mock(s) from each."
+    )
 
-    # Get access token for API authentication if sending is enabled
-    access_token = None
-    if args.send:
-        access_token = get_access_token()
-        if not access_token:
-            print("Failed to obtain access token. API integration will be skipped.")
-            print("Continuing with local file generation only...")
-        else:
-            print("Successfully obtained access token.")
+    access_token = get_access_token() if args.send else None
+    if args.send and not access_token:
+        print("Failed to get access token. Will only generate local files.")
 
-    # Get organization and dataset IDs from config
-    organization_id = API_CONFIG["ORGANIZATION_ID"]
-    dataset_id = API_CONFIG["DATASET_ID"]
-    print(f"Using Organization ID: {organization_id}")
-    print(f"Using Dataset ID: {dataset_id}")
-
-    # Create a list to store all generated fingerprints
     all_fingerprints = []
-
-    # Process each JSON file
     for json_file in json_files:
-        print(f"Processing template: {json_file.name}")
-
-        # Read the template
+        print(f"\nProcessing template: {json_file.name}")
         template_data = read_json_template(json_file)
         if not template_data:
-            print(f"Skipping empty or invalid template: {json_file.name}")
+            print(f"Skipping invalid template: {json_file.name}")
             continue
 
-        # Generate multiple mocks from the template
-        for i in range(mock_count):
-            print(f"  Generating mock {i + 1}/{mock_count} from {json_file.name}")
-
-            # Ensure the template has the dataset ID
-            if "data" in template_data and isinstance(template_data["data"], dict):
-                template_data["data"]["datasetId"] = dataset_id
-
-            # Process the template data with custom_generate
+        for i in range(args.count):
+            print(f"  Generating mock {i + 1}/{args.count}...")
             mocked_data = custom_generate(template_data)
 
-            # Save the mocked fingerprint to a file
-            output_filename = f"mocked_{json_file.stem}_{i + 1}.json"
-            file_path = save_mocked_fingerprint(mocked_data, output_filename)
-            print(f"  Mock fingerprint saved to '{output_dir}/{output_filename}'.")
+            # Add datasetId from config
+            if "data" in mocked_data and isinstance(mocked_data["data"], dict):
+                mocked_data["data"]["datasetId"] = API_CONFIG["DATASET_ID"]
 
-            # Add to the list of all fingerprints
+            output_filename = f"mock_{json_file.stem}_{i + 1}.json"
+            save_mocked_fingerprint(mocked_data, output_filename, output_dir)
+            print(f"  Saved to '{output_dir / output_filename}'.")
             all_fingerprints.append(mocked_data)
 
-    # Post all fingerprints to the API if we have an access token and sending is enabled
-    if access_token and args.send and all_fingerprints:
+    if access_token and args.send:
         print(f"\nSending {len(all_fingerprints)} mock fingerprints to the API...")
-        success_count = 0
-
-        for i, fingerprint in enumerate(all_fingerprints):
-            print(f"  Posting fingerprint {i + 1}/{len(all_fingerprints)}...")
-            success = post_fingerprint(fingerprint, access_token)
-            if success:
-                success_count += 1
-
+        success_count = sum(
+            1 for fp in all_fingerprints if post_fingerprint(fp, access_token)
+        )
         print(
-            f"\nSent {success_count} out of {len(all_fingerprints)} fingerprints successfully."
+            f"\nSuccessfully sent {success_count} of {len(all_fingerprints)} fingerprints."
         )
 
-    print("\nAll templates processed successfully.")
+    print("\nScript finished.")
 
 
 if __name__ == "__main__":
