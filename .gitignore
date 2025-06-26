@@ -1,2 +1,3 @@
 .qodo
-mock_fingerprints/
+mock_outputs/
+exported-from-mocker/
