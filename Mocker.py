@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import argparse, json, random
+import argparse, json, random, math
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -8,22 +8,18 @@ from typing import Any, Dict, Optional
 import requests
 from faker import Faker
 
-# ---------------------------------------------------------------------------
-#  CONSTANTS AND CONFIG
-# ---------------------------------------------------------------------------
-
 ROOT_DIR       = Path(__file__).resolve().parent
 DEFAULT_TPL    = ROOT_DIR / "templates" / "master_fingerprint_template.json"
 DEFAULT_OUTDIR = ROOT_DIR / "mock_outputs"
 
 API_CONFIG = {
-    "API_BASE_URL":        "http://localhost",
-    "KEYCLOAK_TOKEN_URL":  "http://localhost:18080/realms/primecare/protocol/openid-connect/token",
-    "KEYCLOAK_CLIENT_ID":  "primecare-frontend-postman",
-    "ADMIN_USERNAME":      "alice@demo.com",
-    "ADMIN_PASSWORD":      "q",
-    "ORGANIZATION_ID":     "c0b68ef3-2327-4b2c-bc70-71e11663f1cd",
-    "DATASET_ID":          "66912ec9-9e1e-44e9-b3f5-1aefc4dfba18",
+    "API_BASE_URL": "https://dev-ppfl-api.asclepyus.com",
+    "KEYCLOAK_TOKEN_URL": "https://dev-ppfl-auth.asclepyus.com/keycloak/admin/realms/PrimeCare/protocol/openid-connect/token",
+    "KEYCLOAK_CLIENT_ID": "public-dev-ppfl-api-swagger",
+    "ADMIN_USERNAME": "alice@demo.com",
+    "ADMIN_PASSWORD": "123",
+    "ORGANIZATION_ID": "b8486dc3-9632-472f-b933-07aba83e3efc",
+    "DATASET_ID": "3286142b-1830-411c-aacd-5f55d693fe08",
 }
 
 fake = Faker()
@@ -38,12 +34,31 @@ FINGERPRINT_PROFILES = [
     {"name": "Incomplete Minimalist",   "record_set_ids": ["vital_signs"],                          "is_incomplete": True,              "weight": 15},
 ]
 
-# ---------------------------------------------------------------------------
-#  MOCK HELPERS
-# ---------------------------------------------------------------------------
-
 def rand_float(lo: float, hi: float, digits: int = 2) -> float:
     return round(random.uniform(lo, hi), digits)
+
+def mock_dataset_stats() -> dict:
+    """Mocks the new ex:datasetStats block with randomized values."""
+    pos_count = fake.random_int(100, 10000)
+    neg_count = fake.random_int(100, 10000)
+    total = pos_count + neg_count
+    
+    p_pos = pos_count / total if total > 0 else 0
+    p_neg = neg_count / total if total > 0 else 0
+    entropy = 0
+    if p_pos > 0: entropy -= p_pos * math.log2(p_pos)
+    if p_neg > 0: entropy -= p_neg * math.log2(p_neg)
+
+    return {
+        "labelDistribution": {
+            "positive": pos_count,
+            "negative": neg_count,
+        },
+        "labelSkewAlpha": rand_float(0.1, 1.5, 4),
+        "labelEntropy": round(entropy, 4),
+        "featureStatsVector": [rand_float(0, 100) for _ in range(6)],
+        "modelSignature": f"sha256:{fake.sha256()}",
+    }
 
 def mock_statistics(k: str) -> Any:
     if k in ("min", "quartile_1", "percentile_5"):        return rand_float(10, 40)
@@ -55,6 +70,23 @@ def mock_statistics(k: str) -> Any:
     if k == "entropy":                                    return rand_float(1, 4, 4)
     if k == "counts":                                     return [fake.random_int(100, 3000) for _ in range(8)]
     return None
+
+def mock_histogram_data(original_bins: list) -> dict:
+    num_bins = len(original_bins)
+    new_bins = []
+    is_int_bins = all(isinstance(b, int) for b in original_bins)
+    start_val = rand_float(1, 100, 0) if is_int_bins else rand_float(1, 100)
+    new_bins.append(start_val)
+    for _ in range(num_bins - 1):
+        increment = rand_float(5, 50, 0) if is_int_bins else rand_float(5, 50)
+        new_bins.append(new_bins[-1] + increment)
+    
+    new_counts = [fake.random_int(100, 3000) for _ in range(num_bins - 1)]
+    
+    if is_int_bins:
+        new_bins = [round(b) for b in new_bins]
+
+    return {"bins": new_bins, "counts": new_counts}
 
 def mock_image_stats() -> dict:
     min_w, max_w = sorted([fake.random_int(256, 1024), fake.random_int(1024, 4096)])
@@ -123,17 +155,24 @@ def mock_jsd_stats() -> dict:
 
 def generate_mock_data(node: Any, *, strip: bool = False) -> Any:
     if isinstance(node, dict):
-        if "ex:imageStats" in node:
-            node["ex:imageStats"] = {} if strip else mock_image_stats()
-        if "ex:annotationStats" in node:
-            node["ex:annotationStats"] = {} if strip else mock_annotation_stats()
         out: Dict[str, Any] = {}
         for k, v in node.items():
-            if k == "statistics" and isinstance(v, dict):
+            if k == "ex:datasetStats":
+                if not strip:
+                    out[k] = mock_dataset_stats()
+            elif "ex:imageStats" in v if isinstance(v, dict) else False:
+                v["ex:imageStats"] = {} if strip else mock_image_stats()
+                out[k] = v
+            elif "ex:annotationStats" in v if isinstance(v, dict) else False:
+                v["ex:annotationStats"] = {} if strip else mock_annotation_stats()
+                out[k] = v
+            elif k == "statistics" and isinstance(v, dict):
                 if strip: continue
                 new_stats: Dict[str, Any] = {}
                 for sk, sv in v.items():
-                    if isinstance(sv, (int, float)) or sk == "counts":
+                    if sk == "histogram" and isinstance(sv, dict):
+                        new_stats[sk] = mock_histogram_data(sv.get("bins", []))
+                    elif isinstance(sv, (int, float)) or sk == "counts":
                         new_stats[sk] = mock_statistics(sk)
                     elif sk == "category_frequencies" and isinstance(sv, dict):
                         new_stats[sk] = {ck: fake.random_int(100, 3000) for ck in sv}
@@ -153,15 +192,13 @@ def generate_mock_data(node: Any, *, strip: bool = False) -> Any:
     return node
 
 def create_fingerprint(tpl: Dict, profile: Dict) -> Dict:
-    fp = deepcopy(tpl)
-    rs_all = fp["data"]["rawFingerprintJson"]["recordSet"]
-    fp["data"]["rawFingerprintJson"]["recordSet"] = [rs for rs in rs_all if rs["@id"] in profile["record_set_ids"]]
-    fp["data"]["rawFingerprintJson"]["name"] = f"Mocked Fingerprint - {profile['name']}"
-    return generate_mock_data(fp, strip=profile.get("is_incomplete", False))
-
-# ---------------------------------------------------------------------------
-#  API HELPERS
-# ---------------------------------------------------------------------------
+    fp_mocked = generate_mock_data(deepcopy(tpl), strip=profile.get("is_incomplete", False))
+    
+    rs_all = fp_mocked["data"]["rawFingerprintJson"]["recordSet"]
+    fp_mocked["data"]["rawFingerprintJson"]["recordSet"] = [rs for rs in rs_all if rs["@id"] in profile["record_set_ids"]]
+    fp_mocked["data"]["rawFingerprintJson"]["name"] = f"Mocked Fingerprint - {profile['name']}"
+    
+    return fp_mocked
 
 def get_access_token() -> Optional[str]:
     payload = {
@@ -184,15 +221,13 @@ def post_fingerprint(fp: Dict, token: str) -> bool:
     try:
         r = requests.post(url, headers=headers, json=fp, timeout=15)
         r.raise_for_status()
+        print(f"    ✓ POST successful. Response: {r.status_code}")
         return True
     except requests.RequestException as e:
         status = e.response.status_code if hasattr(e, "response") and e.response else "?"
-        print(f"POST failed ({status}): {e}")
+        error_body = e.response.text if hasattr(e, "response") and e.response else "No response body."
+        print(f"    ✗ POST failed ({status}): {e}\n      Response Body: {error_body}")
         return False
-
-# ---------------------------------------------------------------------------
-#  IO HELPERS
-# ---------------------------------------------------------------------------
 
 def read_template(p: Path) -> Dict:
     with open(p, encoding="utf-8") as f:
@@ -203,16 +238,12 @@ def save(fp: Dict, fname: str, outdir: Path):
     with open(outdir / fname, "w", encoding="utf-8") as f:
         json.dump(fp, f, indent=2)
 
-# ---------------------------------------------------------------------------
-#  MAIN
-# ---------------------------------------------------------------------------
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--count", type=int, default=10)
-    ap.add_argument("-o", "--output-dir", type=Path, default=DEFAULT_OUTDIR)
+    ap.add_argument("-o", "--output-dir", type=Path, default=DEFAULT_OUTDIR) # <-- FIXED LINE
     ap.add_argument("-t", "--template-file", type=Path, default=DEFAULT_TPL)
-    ap.add_argument("--send", action="store_true")
+    ap.add_argument("--send", action="store_true", help="Send generated fingerprints to the API.")
     args = ap.parse_args()
 
     master = read_template(args.template_file)
@@ -221,22 +252,23 @@ def main():
     token = get_access_token() if args.send else None
     if args.send and not token:
         print("Unable to fetch token ─ mocks will be generated locally only.")
+        args.send = False
 
     print(f"Generating {args.count} mock fingerprint(s) from {args.template_file}")
     for i in range(1, args.count + 1):
         prof = random.choice(profiles)
         print(f"  • ({i}/{args.count}) profile: {prof['name']}")
         fp = create_fingerprint(master, prof)
-        fp["data"]["datasetId"] = API_CONFIG["DATASET_ID"]
+        
+        fp["data"]["datasetId"] = f"mock-dataset-id-{i}"
+        
         fname = f"mock_{prof['name'].replace(' ', '_')}_{i}.json"
         save(fp, fname, args.output_dir)
 
-        if token:
-            ok = post_fingerprint(fp, token)
-            msg = "✓ sent" if ok else "✗ send failed"
-            print(f"    {msg}")
+        if args.send and token:
+            post_fingerprint(fp, token)
 
-    print(f"Mocks saved to {args.output_dir}")
+    print(f"\nSuccessfully generated {args.count} mocks in directory: {args.output_dir}")
 
 if __name__ == "__main__":
     main()
