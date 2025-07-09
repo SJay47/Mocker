@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-import argparse, json, random, math
+import argparse
+import json
+import random
+import math
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -8,9 +11,10 @@ from typing import Any, Dict, Optional
 import requests
 from faker import Faker
 
-ROOT_DIR       = Path(__file__).resolve().parent
-DEFAULT_TPL    = ROOT_DIR / "templates" / "master_fingerprint_template.json"
+ROOT_DIR = Path(__file__).resolve().parent
+DEFAULT_TPL = ROOT_DIR / "templates" / "master_fingerprint_template.json" 
 DEFAULT_OUTDIR = ROOT_DIR / "mock_outputs"
+
 
 API_CONFIG = {
     "API_BASE_URL": "https://dev-ppfl-api.asclepyus.com",
@@ -18,186 +22,201 @@ API_CONFIG = {
     "KEYCLOAK_CLIENT_ID": "public-dev-ppfl-api-swagger",
     "ADMIN_USERNAME": "alice@demo.com",
     "ADMIN_PASSWORD": "123",
-    "ORGANIZATION_ID": "b8486dc3-9632-472f-b933-07aba83e3efc",
-    "DATASET_ID": "3286142b-1830-411c-aacd-5f55d693fe08",
+    "ORGANIZATION_ID": "458df882-affe-49c1-9bb5-8cab59331f93",
+    "DATASET_ID": "0a6a4f35-45b5-414d-8483-f7440b331b97"
 }
 
 fake = Faker()
 random.seed()
 Faker.seed()
 
+
 FINGERPRINT_PROFILES = [
-    {"name": "Rich Multi-Modal",        "record_set_ids": ["patient_demographics", "vital_signs", "clinical_notes", "medical_images"], "weight": 15},
-    {"name": "Classic Tabular",         "record_set_ids": ["patient_demographics", "vital_signs"],                                       "weight": 30},
-    {"name": "Imaging Center Specialist","record_set_ids": ["medical_images"],                                                            "weight": 20},
-    {"name": "Text-Heavy Unstructured", "record_set_ids": ["patient_demographics", "clinical_notes"],                                    "weight": 20},
-    {"name": "Incomplete Minimalist",   "record_set_ids": ["vital_signs"],                          "is_incomplete": True,              "weight": 15},
+    {"name": "Rich_Multi-Modal",        "record_set_ids": ["patient_demographics", "vital_signs", "clinical_notes", "medical_images"], "weight": 15},
+    {"name": "Classic_Tabular",         "record_set_ids": ["patient_demographics", "vital_signs"],                                       "weight": 30},
+    {"name": "Imaging_Center_Specialist","record_set_ids": ["medical_images"],                                                            "weight": 20},
+    {"name": "Text_Heavy_Unstructured", "record_set_ids": ["patient_demographics", "clinical_notes"],                                    "weight": 20},
+    {"name": "Incomplete_Minimalist",   "record_set_ids": ["vital_signs"],                          "is_incomplete": True,              "weight": 15},
 ]
 
 def rand_float(lo: float, hi: float, digits: int = 2) -> float:
     return round(random.uniform(lo, hi), digits)
 
-def mock_dataset_stats() -> dict:
-    """Mocks the new ex:datasetStats block with randomized values."""
-    pos_count = fake.random_int(100, 10000)
-    neg_count = fake.random_int(100, 10000)
-    total = pos_count + neg_count
-    
-    p_pos = pos_count / total if total > 0 else 0
-    p_neg = neg_count / total if total > 0 else 0
-    entropy = 0
-    if p_pos > 0: entropy -= p_pos * math.log2(p_pos)
-    if p_neg > 0: entropy -= p_neg * math.log2(p_neg)
+def _norm_dist(v):
+    s = sum(v) or 1
+    return [round(x / s, 6) for x in v]
 
+def mock_dataset_stats() -> dict:
+    pos = fake.random_int(100, 10000)
+    neg = fake.random_int(100, 10000)
+    total = pos + neg
+    p_pos = pos / total if total > 0 else 0
+    p_neg = neg / total if total > 0 else 0
+    entropy = -(p_pos * math.log2(p_pos) + p_neg * math.log2(p_neg)) if p_pos > 0 and p_neg > 0 else 0
     return {
-        "labelDistribution": {
-            "positive": pos_count,
-            "negative": neg_count,
-        },
-        "labelSkewAlpha": rand_float(0.1, 1.5, 4),
-        "labelEntropy": round(entropy, 4),
-        "featureStatsVector": [rand_float(0, 100) for _ in range(6)],
-        "modelSignature": f"sha256:{fake.sha256()}",
+        "@type": "ex:DatasetStatistics",
+        "ex:labelDistribution": {"@type": "ex:LabelDistribution", "ex:positive": pos, "ex:negative": neg},
+        "ex:labelSkewAlpha": rand_float(0.1, 1.5, 4),
+        "ex:labelEntropy": round(entropy, 4),
+        "ex:featureStatsVector": [rand_float(0, 100) for _ in range(6)],
+        "ex:modelSignature": f"sha256:{fake.sha256()}",
     }
 
-def mock_statistics(k: str) -> Any:
-    if k in ("min", "quartile_1", "percentile_5"):        return rand_float(10, 40)
-    if k in ("median", "mean"):                           return rand_float(40, 80)
-    if k in ("max", "quartile_3", "percentile_95"):       return rand_float(80, 150)
-    if k == "stdDev":                                     return rand_float(5, 20)
-    if k in ("unique_count", "missing_count", "mode_frequency"): return fake.random_int(0, 5000)
-    if k in ("skewness", "kurtosis"):                     return rand_float(-1, 1, 2)
-    if k == "entropy":                                    return rand_float(1, 4, 4)
-    if k == "counts":                                     return [fake.random_int(100, 3000) for _ in range(8)]
-    return None
+def mock_numeric_stats(template: dict) -> dict:
+    stats = {"@type": "stat:Statistics"}
+    if "stat:min" in template: stats["stat:min"] = rand_float(10, 40)
+    if "stat:max" in template: stats["stat:max"] = rand_float(80, 150)
+    if "stat:mean" in template: stats["stat:mean"] = rand_float(40, 80)
+    if "stat:median" in template: stats["stat:median"] = stats["stat:mean"] + rand_float(-5, 5)
+    if "stat:stdDev" in template: stats["stat:stdDev"] = rand_float(5, 20)
+    if "stat:unique_count" in template: stats["stat:unique_count"] = fake.random_int(50, 100)
+    if "stat:missing_count" in template: stats["stat:missing_count"] = fake.random_int(0, 500)
+    if "stat:skewness" in template: stats["stat:skewness"] = rand_float(-1, 1)
+    if "stat:kurtosis" in template: stats["stat:kurtosis"] = rand_float(-1, 1)
+    if "stat:histogram" in template:
+        num_bins = len(template["stat:histogram"]["stat:bins"])
+        new_bins = sorted([rand_float(10, 200) for _ in range(num_bins)])
+        stats["stat:histogram"] = {
+            "stat:bins": new_bins,
+            "stat:counts": [fake.random_int(100, 3000) for _ in range(num_bins - 1)],
+        }
+    return stats
 
-def mock_histogram_data(original_bins: list) -> dict:
-    num_bins = len(original_bins)
-    new_bins = []
-    is_int_bins = all(isinstance(b, int) for b in original_bins)
-    start_val = rand_float(1, 100, 0) if is_int_bins else rand_float(1, 100)
-    new_bins.append(start_val)
-    for _ in range(num_bins - 1):
-        increment = rand_float(5, 50, 0) if is_int_bins else rand_float(5, 50)
-        new_bins.append(new_bins[-1] + increment)
-    
-    new_counts = [fake.random_int(100, 3000) for _ in range(num_bins - 1)]
-    
-    if is_int_bins:
-        new_bins = [round(b) for b in new_bins]
+def mock_categorical_stats(template: dict) -> dict:
+    """
+    Mocks statistics for a categorical field, preserving the category names
+    defined in the template and only mocking their values.
+    """
+    stats = {"@type": "stat:Statistics"}
+    category_template = template.get("stat:category_frequencies", {})
+    original_categories = list(category_template.keys())
 
-    return {"bins": new_bins, "counts": new_counts}
+    if "stat:unique_count" in template:
+        stats["stat:unique_count"] = len(original_categories)
+
+    if "stat:missing_count" in template:
+        stats["stat:missing_count"] = fake.random_int(0, 500)
+
+    if "stat:mode" in template and original_categories:
+        stats["stat:mode"] = random.choice(original_categories)
+
+    if "stat:mode_frequency" in template:
+        stats["stat:mode_frequency"] = fake.random_int(1000, 5000)
+
+    if "stat:entropy" in template:
+        stats["stat:entropy"] = rand_float(1, 4)
+
+    if original_categories:
+        stats["stat:category_frequencies"] = {
+            category: fake.random_int(100, 3000)
+            for category in original_categories
+        }
+
+    return stats
 
 def mock_image_stats() -> dict:
     min_w, max_w = sorted([fake.random_int(256, 1024), fake.random_int(1024, 4096)])
     min_h, max_h = sorted([fake.random_int(256, 1024), fake.random_int(1024, 4096)])
     return {
+        "@type": "ex:ImageStatistics",
         "ex:numImages": fake.random_int(500, 10000),
-        "ex:imageDimensions": {
-            "ex:minWidth": min_w,  "ex:maxWidth": max_w,
-            "ex:minHeight": min_h, "ex:maxHeight": max_h,
-            "ex:avgWidth": (min_w + max_w) // 2,
-            "ex:avgHeight": (min_h + max_h) // 2,
-            "ex:aspectRatioDistribution": random.choice(["1:1", "4:3", "16:9"]),
-        },
+        "ex:imageDimensions": {"ex:minWidth": min_w, "ex:maxWidth": max_w, "ex:minHeight": min_h, "ex:maxHeight": max_h},
         "ex:colorMode": random.choice(["grayscale", "RGB"]),
-        "ex:channels": 1 if random.choice([True, False]) else 3,
-        "ex:fileSizeBytes": {
-            "ex:avg": fake.random_int(100000, 500000),
-            "ex:min": fake.random_int(10000, 100000),
-            "ex:max": fake.random_int(500000, 2000000),
-        },
-        "ex:modality": random.choice(["X-ray", "MRI", "CT Scan", "Microscopy"]),
+        "ex:modality": random.choice(["X-ray", "MRI", "CT Scan"]),
     }
 
 def mock_annotation_stats() -> dict:
-    classes = sorted({*fake.words(nb=random.randint(2, 8),
-                                  ext_word_list=["nodule","fracture","tumor","device",
-                                                 "lesion","opacity","cyst","inflammation"])})
+    classes = sorted({*fake.words(nb=random.randint(2, 8), ext_word_list=["nodule", "fracture", "tumor"])})
     return {
+        "@type": "ex:AnnotationStatistics",
         "ex:numAnnotations": fake.random_int(1000, 50000),
         "ex:numClasses": len(classes),
         "ex:classes": classes,
-        "ex:objectsPerImage": {
-            "ex:min": fake.random_int(0, 1),
-            "ex:max": fake.random_int(2, 10),
-            "ex:avg": rand_float(1, 5, 2),
-            "ex:median": fake.random_int(1, 4),
-        },
-        "ex:boundingBoxStats": {
-            "ex:avgRelativeWidth":  rand_float(0.1, 0.5, 2),
-            "ex:avgRelativeHeight": rand_float(0.1, 0.5, 2),
-            "ex:avgAspectRatio":    rand_float(0.5, 1.5, 2),
-            "ex:relativeAreaDistribution": f"beta({fake.random_int(2,5)},{fake.random_int(2,5)})",
-            "ex:shapeNotes": random.choice(["rectangular", "mostly rectangular", "varied"]),
-        },
+        "ex:objectsPerImage": {"ex:avg": rand_float(1, 5, 2), "ex:median": fake.random_int(1, 4)},
+        "ex:boundingBoxStats": {"ex:avgRelativeWidth": rand_float(0.1, 0.5), "ex:avgRelativeHeight": rand_float(0.1, 0.5)},
     }
-
-def _norm(v): s = sum(v) or 1; return [round(x / s, 6) for x in v]
 
 def mock_jsd_stats() -> dict:
-    toks  = [fake.word() for _ in range(5)]
-    probs = _norm([random.random() for _ in toks])
+    tokens = [fake.word() for _ in range(5)]
+    probs = _norm_dist([random.random() for _ in tokens])
     return {
-        "@type": "TextDistribution",
-        "total_records_analyzed": fake.random_int(500, 10000),
-        "missing_count": fake.random_int(0, 200),
-        "language": "en",
-        "text_summary_stats": {
-            "mean_tokens_per_record": rand_float(50, 200, 1),
-            "median_tokens_per_record": fake.random_int(40, 180),
-            "total_unique_tokens": fake.random_int(5000, 25000),
-        },
-        "vocabulary_size": len(toks),
-        "top_k_tokens": [{"token": t, "frequency": p} for t, p in zip(toks, probs)],
-        "token_probability_vector": probs,
+        "@type": "jsd:TextDistribution",
+        "jsd:total_records_analyzed": fake.random_int(500, 10000),
+        "jsd:language": "en",
+        "jsd:vocabulary_size": len(tokens),
+        "jsd:top_k_tokens": [{"jsd:token": t, "jsd:frequency": p} for t, p in zip(tokens, probs)],
+        "jsd:token_probability_vector": probs,
     }
 
-def generate_mock_data(node: Any, *, strip: bool = False) -> Any:
+def generate_mock_data(node: Any) -> Any:
+    """Recursively traverses the template and replaces values with mocked data."""
     if isinstance(node, dict):
-        out: Dict[str, Any] = {}
-        for k, v in node.items():
-            if k == "ex:datasetStats":
-                if not strip:
-                    out[k] = mock_dataset_stats()
-            elif "ex:imageStats" in v if isinstance(v, dict) else False:
-                v["ex:imageStats"] = {} if strip else mock_image_stats()
-                out[k] = v
-            elif "ex:annotationStats" in v if isinstance(v, dict) else False:
-                v["ex:annotationStats"] = {} if strip else mock_annotation_stats()
-                out[k] = v
-            elif k == "statistics" and isinstance(v, dict):
-                if strip: continue
-                new_stats: Dict[str, Any] = {}
-                for sk, sv in v.items():
-                    if sk == "histogram" and isinstance(sv, dict):
-                        new_stats[sk] = mock_histogram_data(sv.get("bins", []))
-                    elif isinstance(sv, (int, float)) or sk == "counts":
-                        new_stats[sk] = mock_statistics(sk)
-                    elif sk == "category_frequencies" and isinstance(sv, dict):
-                        new_stats[sk] = {ck: fake.random_int(100, 3000) for ck in sv}
-                    elif isinstance(sv, dict):
-                        new_stats[sk] = generate_mock_data(sv, strip=strip)
-                    else:
-                        new_stats[sk] = sv
-                out[k] = new_stats
-            elif k == "jsd:textDistribution":
-                if not strip:
-                    out[k] = mock_jsd_stats()
+        if "stat:statistics" in node:
+            stats_template = node["stat:statistics"]
+            if "stat:min" in stats_template or "stat:mean" in stats_template:
+                node["stat:statistics"] = mock_numeric_stats(stats_template)
             else:
-                out[k] = generate_mock_data(v, strip=strip)
-        return out
+                node["stat:statistics"] = mock_categorical_stats(stats_template)
+        if "jsd:textDistribution" in node:
+            node["jsd:textDistribution"] = mock_jsd_stats()
+        if "ex:imageStats" in node:
+            node["ex:imageStats"] = mock_image_stats()
+        if "ex:annotationStats" in node:
+            node["ex:annotationStats"] = mock_annotation_stats()
+        if "ex:datasetStats" in node:
+            node["ex:datasetStats"] = mock_dataset_stats()
+
+        return {k: generate_mock_data(v) for k, v in node.items()}
+
     if isinstance(node, list):
-        return [generate_mock_data(i, strip=strip) for i in node]
+        return [generate_mock_data(item) for item in node]
+    
     return node
 
-def create_fingerprint(tpl: Dict, profile: Dict) -> Dict:
-    fp_mocked = generate_mock_data(deepcopy(tpl), strip=profile.get("is_incomplete", False))
-    
-    rs_all = fp_mocked["data"]["rawFingerprintJson"]["recordSet"]
-    fp_mocked["data"]["rawFingerprintJson"]["recordSet"] = [rs for rs in rs_all if rs["@id"] in profile["record_set_ids"]]
-    fp_mocked["data"]["rawFingerprintJson"]["name"] = f"Mocked Fingerprint - {profile['name']}"
-    
+def create_fingerprint(template: Dict, profile: Dict) -> Dict:
+    """Creates a single mocked fingerprint based on a profile."""
+    fp_mocked = generate_mock_data(deepcopy(template))
+    croissant_body = fp_mocked["data"]["rawFingerprintJson"]
+    all_record_sets = croissant_body["recordSet"]
+    profiled_record_sets = [rs for rs in all_record_sets if rs["@id"] in profile["record_set_ids"]]
+    croissant_body["recordSet"] = profiled_record_sets
+    croissant_body["name"] = f"Mocked Fingerprint - {profile['name']}"
+    croissant_body["description"] = f"A mocked Croissant fingerprint for the '{profile['name']}' profile."
+    if "medical_images" in profile["record_set_ids"]:
+        if not any(d["@id"] == "images-zip" for d in croissant_body["distribution"]):
+            croissant_body["distribution"].append({
+              "@type": "cr:FileObject",
+              "@id": "images-zip",
+              "name": "medical_images.zip",
+              "contentUrl": f"https://example.com/files/mock_images_{fake.uuid4()}.zip",
+              "encodingFormat": "application/zip",
+              "sha256": fake.sha256()
+            })
+
+        for rs in croissant_body["recordSet"]:
+            if rs["@id"] == "medical_images":
+                rs["field"] = [{
+                  "@id": "medical_images/image",
+                  "@type": "cr:Field",
+                  "name": "Image",
+                  "dataType": "sc:ImageObject",
+                  "source": {
+                    "fileSet": {
+                      "@id": "image-files",
+                      "containedIn": { "@id": "images-zip" },
+                      "includes": "*.dcm"
+                    },
+                    "extract": { "fileProperty": "content" }
+                  }
+                }]
+                break
+
+    if profile.get("is_incomplete", False):
+        for rs in croissant_body["recordSet"]:
+            for field in rs.get("field", []):
+                if "stat:statistics" in field:
+                    del field["stat:statistics"]
+
     return fp_mocked
 
 def get_access_token() -> Optional[str]:
@@ -228,20 +247,25 @@ def post_fingerprint(fp: Dict, token: str) -> bool:
         error_body = e.response.text if hasattr(e, "response") and e.response else "No response body."
         print(f"    ✗ POST failed ({status}): {e}\n      Response Body: {error_body}")
         return False
-
+    
 def read_template(p: Path) -> Dict:
     with open(p, encoding="utf-8") as f:
         return json.load(f)
 
-def save(fp: Dict, fname: str, outdir: Path):
+def read_json_template(filepath: Path) -> Dict:
+    with open(filepath, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_fingerprint(fp: Dict, filename: str, outdir: Path):
     outdir.mkdir(parents=True, exist_ok=True)
-    with open(outdir / fname, "w", encoding="utf-8") as f:
+    with open(outdir / filename, "w", encoding="utf-8") as f:
         json.dump(fp, f, indent=2)
+    print(f"    ✓ Saved: {outdir / filename}")
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--count", type=int, default=10)
-    ap.add_argument("-o", "--output-dir", type=Path, default=DEFAULT_OUTDIR) # <-- FIXED LINE
+    ap.add_argument("-o", "--output-dir", type=Path, default=DEFAULT_OUTDIR) 
     ap.add_argument("-t", "--template-file", type=Path, default=DEFAULT_TPL)
     ap.add_argument("--send", action="store_true", help="Send generated fingerprints to the API.")
     args = ap.parse_args()
@@ -263,7 +287,7 @@ def main():
         fp["data"]["datasetId"] = f"mock-dataset-id-{i}"
         
         fname = f"mock_{prof['name'].replace(' ', '_')}_{i}.json"
-        save(fp, fname, args.output_dir)
+        save_fingerprint(fp, fname, args.output_dir)
 
         if args.send and token:
             post_fingerprint(fp, token)

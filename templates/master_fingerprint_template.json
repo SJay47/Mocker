@@ -4,400 +4,182 @@
     "version": "1.2",
     "candidateSearchVisibility": 0,
     "isAnonymous": true,
-    "ex:datasetStats": {
-      "labelDistribution": {
-        "positive": 3500,
-        "negative": 6500
-      },
-      "labelSkewAlpha": 0.27,
-      "labelEntropy": 0.93,
-      "featureStatsVector": [
-        55.4,
-        15.2,
-        0.8,
-        28.6,
-        5.7,
-        0.18
-      ],
-      "modelSignature": "sha256:ab12cd34ef567890..."
-    },
     "rawFingerprintJson": {
       "@context": {
-        "@language": "en",
-        "@vocab": "https://schema.org/",
-        "cr": "http://mlcommons.org/croissant/",
-        "sc": "https://schema.org/",
-        "dct": "http://purl.org/dc/terms/",
-        "stat": "https://your-startup.com/croissant-extensions/statistics/1.0/",
-        "Statistics": "stat:Statistics",
-        "statistics": "stat:statistics",
-        "unit": "stat:unit",
-        "min": "stat:min",
-        "max": "stat:max",
-        "mean": "stat:mean",
-        "median": "stat:median",
-        "stdDev": "stat:stdDev",
-        "unique_count": "stat:unique_count",
-        "missing_count": "stat:missing_count",
-        "quartile_1": "stat:quartile_1",
-        "quartile_3": "stat:quartile_3",
-        "percentile_5": "stat:percentile_5",
-        "percentile_95": "stat:percentile_95",
-        "skewness": "stat:skewness",
-        "kurtosis": "stat:kurtosis",
-        "histogram": "stat:histogram",
-        "bins": "stat:bins",
-        "counts": "stat:counts",
-        "distribution_fit": "stat:distribution_fit",
-        "distribution_type": "stat:type",
-        "parameters": "stat:parameters",
-        "fit_score": "stat:fit_score",
-        "mode": "stat:mode",
-        "mode_frequency": "stat:mode_frequency",
-        "category_frequencies": "stat:category_frequencies",
-        "entropy": "stat:entropy",
-        "order": "stat:order",
-        "ex": "http://example.com/croissant-ext#",
-        "jsd": "https://your-startup.com/croissant-extensions/jensen-shannon/1.0/",
-        "TextDistribution": "jsd:TextDistribution",
-        "textDistribution": "jsd:textDistribution"
-      },
-      "name": "Gold Standard - Extended Multi-Modal Medical Fingerprint",
-      "description": "A comprehensive, multi-modal fingerprint containing rich tabular data, detailed clinical notes, and annotated medical images, serving as a master template.",
-      "conformsTo": "http://mlcommons.org/croissant/1.0",
-      "recordSet": [
+    "@language": "en",
+    "@vocab": "https://schema.org/",
+    "cr": "http://mlcommons.org/croissant/",
+    "sc": "https://schema.org/",
+    "dct": "http://purl.org/dc/terms/",
+    "stat": "https://your-startup.com/croissant-extensions/statistics/1.0/",
+    "jsd": "https://your-startup.com/croissant-extensions/jensen-shannon/1.0/",
+    "ex": "http://example.com/croissant-ext#",
+    "conformsTo": "dct:conformsTo"
+  },
+  "@type": "sc:Dataset",
+  "name": "Gold Standard - Extended Multi-Modal Medical Fingerprint",
+  "description": "A comprehensive, multi-modal fingerprint containing rich tabular data, detailed clinical notes, and annotated medical images, serving as a master template.",
+  "conformsTo": "http://mlcommons.org/croissant/1.0",
+  "url": "https://example.com/dataset/gold-standard",
+  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "ex:datasetStats": {
+    "@type": "ex:DatasetStatistics",
+    "ex:labelDistribution": {
+      "@type": "ex:LabelDistribution",
+      "ex:positive": 3500,
+      "ex:negative": 6500
+    },
+    "ex:labelSkewAlpha": 0.27,
+    "ex:labelEntropy": 0.93,
+    "ex:featureStatsVector": [
+      55.4,
+      15.2,
+      0.8,
+      28.6,
+      5.7,
+      0.18
+    ],
+    "ex:modelSignature": "sha256:ab12cd34ef567890..."
+  },
+  "distribution": [
+    {
+      "@type": "cr:FileObject",
+      "@id": "demographics-file",
+      "name": "demographics.csv",
+      "contentUrl": "https://example.com/files/demographics.csv",
+      "encodingFormat": "text/csv",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "vitals-file",
+      "name": "vitals.csv",
+      "contentUrl": "https://example.com/files/vitals.csv",
+      "encodingFormat": "text/csv",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "@type": "cr:FileObject",
+      "@id": "notes-file",
+      "name": "notes.csv",
+      "contentUrl": "https://example.com/files/notes.csv",
+      "encodingFormat": "text/csv",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "recordSet": [
+    {
+      "@id": "patient_demographics",
+      "@type": "cr:RecordSet",
+      "name": "Patient Demographics",
+      "description": "Demographic attributes of patients.",
+      "field": [
         {
-          "@id": "patient_demographics",
-          "@type": "cr:RecordSet",
-          "name": "Patient Demographics",
-          "description": "Demographic attributes of patients.",
-          "recordCount": 10000,
-          "field": [
-            {
-              "@id": "patient_demographics/patient_age",
-              "@type": "cr:Field",
-              "name": "Patient Age",
-              "description": "The age of the patient in years at the time of the record.",
-              "dataType": "sc:Integer", "unit": "years",
-              "statistics": {
-                "@type": "Statistics", 
-                "min": 18, 
-                "max": 92, 
-                "mean": 55.4, 
-                "median": 56, 
-                "stdDev": 15.2,
-                "unique_count": 75, 
-                "missing_count": 120, 
-                "quartile_1": 42, 
-                "quartile_3": 68,
-                "percentile_5": 25, 
-                "percentile_95": 85, 
-                "skewness": -0.15, 
-                "kurtosis": -0.4,
-                "histogram": { 
-                  "bins": [18, 30, 40, 50, 60, 70, 80, 92], 
-                  "counts": [1200, 1500, 1800, 2000, 1600, 1300, 600] 
-                },
-                "distribution_fit": { 
-                  "distribution_type": "Normal", 
-                  "parameters": {
-                    "mean": 55.4, 
-                    "stdDev": 15.2
-                  }, 
-                    "fit_score": 0.92 
-                  }
-              }
-            },
-            {
-              "@id": "patient_demographics/patient_blood_type",
-              "@type": "cr:Field",
-              "name": "Patient Blood Type",
-              "description": "The patient's blood group.",
-              "dataType": "sc:Text",
-              "statistics": {
-                "@type": "Statistics", 
-                "unique_count": 8, 
-                "missing_count": 50, 
-                "mode": "O+", 
-                "mode_frequency": 3500,
-                "category_frequencies": { 
-                  "O+": 3500, 
-                  "A+": 2500, 
-                  "B+": 1200, 
-                  "O-": 800, 
-                  "A-": 750, 
-                  "AB+": 500, 
-                  "B-": 400, 
-                  "AB-": 250 },
-                "entropy": 2.1
-              }
-            },
-            {
-              "@id": "patient_demographics/ethnicity",
-              "@type": "cr:Field",
-              "name": "Patient Ethnicity",
-              "description": "The patient's self-reported ethnicity.",
-              "dataType": "sc:Text",
-              "statistics": {
-                "@type": "Statistics", 
-                "unique_count": 5, 
-                "missing_count": 450, 
-                "mode": "Caucasian", 
-                "mode_frequency": 4500,
-                "category_frequencies": 
-                { 
-                  "Caucasian": 4500, 
-                  "African American": 2200, 
-                  "Asian": 1500, 
-                  "Hispanic": 1000, 
-                  "Other": 350 
-                },
-                  "entropy": 1.85
-              }
-            },
-            {
-              "@id": "patient_demographics/has_insurance",
-              "@type": "cr:Field",
-              "name": "Has Insurance",
-              "description": "Whether the patient has medical insurance.",
-              "dataType": "sc:Boolean",
-              "statistics": {
-                "@type": "Statistics", 
-                "unique_count": 2, 
-                "missing_count": 20, 
-                "mode": true, 
-                "mode_frequency": 9200,
-                "category_frequencies": 
-                { 
-                  "true": 9200, 
-                  "false": 780 
-                }
-              }
-            }
-          ]
+          "@id": "patient_demographics/patient_age",
+          "@type": "cr:Field",
+          "name": "Patient Age",
+          "description": "The age of the patient in years at the time of the record.",
+          "dataType": "sc:Integer",
+          "source": { "fileObject": { "@id": "demographics-file" }, "extract": { "column": "Patient Age" } },
+          "stat:unit": "years",
+          "stat:statistics": {
+            "@type": "stat:Statistics",
+            "stat:min": 18, "stat:max": 92, "stat:mean": 55.4, "stat:median": 56, "stat:stdDev": 15.2,
+            "stat:unique_count": 75, "stat:missing_count": 120, "stat:quartile_1": 42, "stat:quartile_3": 68,
+            "stat:percentile_5": 25, "stat:percentile_95": 85, "stat:skewness": -0.15, "stat:kurtosis": -0.4,
+            "stat:histogram": { "stat:bins": [18, 30, 40, 50, 60, 70, 80, 92], "stat:counts": [1200, 1500, 1800, 2000, 1600, 1300, 600] },
+            "stat:distribution_fit": { "stat:type": "Normal", "stat:parameters": { "mean": 55.4, "stdDev": 15.2 }, "stat:fit_score": 0.92 }
+          }
         },
         {
-          "@id": "vital_signs",
-          "@type": "cr:RecordSet",
-          "name": "Vital Signs",
-          "description": "Physiological measurements collected at admission.",
-          "recordCount": 10000,
-          "field": [
-            {
-              "@id": "vital_signs/bmi",
-              "@type": "cr:Field",
-              "name": "Body Mass Index (BMI)",
-              "description": "A measure of body fat based on height and weight.",
-              "dataType": "sc:Float",
-              "statistics": {
-                "@type": "Statistics", 
-                "min": 16.5, 
-                "max": 45.2, 
-                "mean": 28.6, 
-                "median": 28.1, 
-                "stdDev": 5.7,
-                "unique_count": 287, 
-                "missing_count": 200, 
-                "quartile_1": 24.5, 
-                "quartile_3": 32.1,
-                "percentile_5": 20.1, 
-                "percentile_95": 38.9, 
-                "skewness": 0.8, 
-                "kurtosis": 0.3,
-                "histogram": 
-                { 
-                  "bins": [16, 20, 25, 30, 35, 40, 45], 
-                  "counts": [500, 1500, 3000, 2500, 1500, 800] 
-                }
-              }
-            },
-            {
-              "@id": "vital_signs/heart_rate",
-              "@type": "cr:Field",
-              "name": "Heart Rate",
-              "description": "Beats per minute.",
-              "dataType": "sc:Integer", "unit": "bpm",
-              "statistics": {
-                "@type": "Statistics", 
-                "min": 50, 
-                "max": 120, 
-                "mean": 75, 
-                "median": 74, 
-                "stdDev": 12,
-                "unique_count": 71, 
-                "missing_count": 80,
-                "quartile_1": 65, 
-                "quartile_3": 85,
-                "percentile_5": 55, 
-                "percentile_95": 98, 
-                "skewness": 0.2, 
-                "kurtosis": -0.3,
-                 "histogram": 
-                 { 
-                  "bins": [50, 60, 70, 80, 90, 100, 110, 120], 
-                  "counts": [1000, 2000, 2500, 2200, 1300, 600, 400] 
-                }
-              }
-            },
-            {
-              "@id": "vital_signs/respiratory_rate",
-              "@type": "cr:Field",
-              "name": "Respiratory Rate",
-              "description": "Breaths per minute.",
-              "dataType": "sc:Integer", "unit": "breaths/min",
-              "statistics": {
-                  "@type": "Statistics", 
-                  "min": 12, 
-                  "max": 30, 
-                  "mean": 18, 
-                  "median": 18, 
-                  "stdDev": 3,
-                  "unique_count": 19, 
-                  "missing_count": 250, 
-                  "quartile_1": 16, 
-                  "quartile_3": 20,
-                  "percentile_5": 14, 
-                  "percentile_95": 24, 
-                  "skewness": 0.5, 
-                  "kurtosis": 0.1,
-                  "histogram": 
-                  { 
-                    "bins": [12, 16, 20, 24, 30], 
-                    "counts": [2000, 5000, 2500, 500] 
-                  }
-              }
-            },
-            {
-              "@id": "vital_signs/oxygen_saturation",
-              "@type": "cr:Field",
-              "name": "Oxygen Saturation",
-              "description": "Percentage of oxygen-saturated hemoglobin.",
-              "dataType": "sc:Float", "unit": "%",
-              "statistics": {
-                  "@type": "Statistics", 
-                  "min": 88.0, 
-                  "max": 100.0, 
-                  "mean": 97.5, 
-                  "median": 98.0, 
-                  "stdDev": 2.5,
-                  "unique_count": 121, 
-                  "missing_count": 300, 
-                  "quartile_1": 96.0, 
-                  "quartile_3": 99.0,
-                  "percentile_5": 92.0,
-                  "percentile_95": 100.0, 
-                  "skewness": -1.2, 
-                  "kurtosis": 1.5,
-                  "histogram": 
-                  { 
-                    "bins": [88, 92, 95, 98, 100], 
-                    "counts": [300, 1200, 3500, 5000] }
-              }
-            }
-          ]
-        },
-        {
-          "@id": "clinical_notes",
-          "@type": "cr:RecordSet",
-          "name": "Clinical Notes",
-          "description": "Narrative clinical documentation.",
-          "recordCount": 10000,
-          "field": [
-            {
-              "@id": "clinical_notes/notes",
-              "@type": "cr:Field",
-              "name": "Notes",
-              "description": "Free-text clinician notes.",
-              "dataType": "sc:Text",
-              "jsd:textDistribution": {
-                "@type": "TextDistribution", 
-                "field_name": "clinical_notes", 
-                "total_records_analyzed": 10000, 
-                "missing_count": 173, 
-                "language": "en",
-                "text_summary_stats": { 
-                  "mean_tokens_per_record": 85.2, 
-                  "median_tokens_per_record": 78, 
-                  "total_unique_tokens": 12500 },
-                "vocabulary_size": 5,
-                "top_k_tokens": [ 
-                  { 
-                  "token": "patient", 
-                  "frequency": 0.35 
-                  }, 
-                  { 
-                    "token": "admitted", 
-                    "frequency": 0.25 
-                    }, 
-                    { 
-                      "token": "symptoms", 
-                      "frequency": 0.20 
-                      }, 
-                      { 
-                        "token": "treatment", 
-                        "frequency": 0.15 
-                        }, 
-                        { 
-                          "token": "discharge", 
-                          "frequency": 0.05 
-                          } 
-                        ],
-                "token_probability_vector": [0.35, 0.25, 0.20, 0.15, 0.05]
-              }
-            }
-          ]
-        },
-        {
-          "@id": "medical_images",
-          "@type": "cr:RecordSet",
-          "name": "Medical Images",
-          "description": "Radiology images linked to patient records.",
-          "recordCount": 8500,
-          "ex:imageStats": {
-            "ex:numImages": 8500, 
-            "ex:imageDimensions": 
-            { 
-              "minWidth": 1024, 
-              "maxWidth": 4096, 
-              "minHeight": 1024, 
-              "maxHeight": 4096, 
-              "avgWidth": 2048, 
-              "avgHeight": 2048, 
-              "aspectRatioDistribution": "1:1" 
-            },
-            "ex:colorMode": "grayscale", 
-            "ex:channels": 1, 
-            "ex:fileSizeBytes": 
-            { 
-              "avg": 524288, 
-              "min": 131072, 
-              "max": 1048576 
-              }, 
-              "ex:modality": "X-ray"
-          },
-          "ex:annotationStats": {
-            "ex:numAnnotations": 32000, 
-            "ex:numClasses": 4, 
-            "ex:classes": ["nodule", "fracture", "opacity", "device"],
-            "ex:objectsPerImage": 
-            { 
-              "min": 0, 
-              "max": 6, 
-              "avg": 3.76, 
-              "median": 3 
-            },
-            "ex:boundingBoxStats": 
-            { 
-              "avgRelativeWidth": 0.18, 
-              "avgRelativeHeight": 0.22, 
-              "avgAspectRatio": 0.82, 
-              "relativeAreaDistribution": "beta(2,5)", 
-              "shapeNotes": "rectangular" }
+          "@id": "patient_demographics/patient_blood_type",
+          "@type": "cr:Field",
+          "name": "Patient Blood Type",
+          "description": "The patient's blood group.",
+          "dataType": "sc:Text",
+           "source": { "fileObject": { "@id": "demographics-file" }, "extract": { "column": "Blood Type" } },
+          "stat:statistics": {
+            "@type": "stat:Statistics", "stat:unique_count": 8, "stat:missing_count": 50, "stat:mode": "O+", "stat:mode_frequency": 3500,
+            "stat:category_frequencies": { "O+": 3500, "A+": 2500, "B+": 1200, "O-": 800, "A-": 750, "AB+": 500, "B-": 400, "AB-": 250 },
+            "stat:entropy": 2.1
           }
         }
       ]
     },
-    "datasetId": "73193380-cf5d-42cd-b0ba-0a468938a8b9"
+    {
+      "@id": "vital_signs",
+      "@type": "cr:RecordSet",
+      "name": "Vital Signs",
+      "description": "Physiological measurements collected at admission.",
+      "field": [
+        {
+          "@id": "vital_signs/bmi",
+          "@type": "cr:Field",
+          "name": "Body Mass Index (BMI)",
+          "description": "A measure of body fat based on height and weight.",
+          "dataType": "sc:Float",
+          "source": { "fileObject": { "@id": "vitals-file" }, "extract": { "column": "BMI" } },
+          "stat:statistics": {
+            "@type": "stat:Statistics", "stat:min": 16.5, "stat:max": 45.2, "stat:mean": 28.6, "stat:median": 28.1, "stat:stdDev": 5.7,
+            "stat:unique_count": 287, "stat:missing_count": 200, "stat:quartile_1": 24.5, "stat:quartile_3": 32.1,
+            "stat:percentile_5": 20.1, "stat:percentile_95": 38.9, "stat:skewness": 0.8, "stat:kurtosis": 0.3,
+            "stat:histogram": { "stat:bins": [16, 20, 25, 30, 35, 40, 45], "stat:counts": [500, 1500, 3000, 2500, 1500, 800] }
+          }
+        }
+      ]
+    },
+    {
+      "@id": "clinical_notes",
+      "@type": "cr:RecordSet",
+      "name": "Clinical Notes",
+      "description": "Narrative clinical documentation.",
+      "field": [
+        {
+          "@id": "clinical_notes/notes",
+          "@type": "cr:Field",
+          "name": "Notes",
+          "description": "Free-text clinician notes.",
+          "dataType": "sc:Text",
+          "source": { "fileObject": { "@id": "notes-file" }, "extract": { "column": "Notes" } },
+          "jsd:textDistribution": {
+            "@type": "jsd:TextDistribution", "jsd:field_name": "clinical_notes", "jsd:total_records_analyzed": 10000, "jsd:missing_count": 173, "jsd:language": "en",
+            "jsd:text_summary_stats": { "jsd:mean_tokens_per_record": 85.2, "jsd:median_tokens_per_record": 78, "jsd:total_unique_tokens": 12500 },
+            "jsd:vocabulary_size": 5,
+            "jsd:top_k_tokens": [
+              { "jsd:token": "patient", "jsd:frequency": 0.35 },
+              { "jsd:token": "admitted", "jsd:frequency": 0.25 },
+              { "jsd:token": "symptoms", "jsd:frequency": 0.20 },
+              { "jsd:token": "treatment", "jsd:frequency": 0.15 },
+              { "jsd:token": "discharge", "jsd:frequency": 0.05 }
+            ],
+            "jsd:token_probability_vector": [0.35, 0.25, 0.20, 0.15, 0.05]
+          }
+        }
+      ]
+    },
+    {
+      "@id": "medical_images",
+      "@type": "cr:RecordSet",
+      "name": "Medical Images",
+      "description": "Radiology images linked to patient records.",
+      "ex:imageStats": {
+        "@type": "ex:ImageStatistics",
+        "ex:numImages": 8500,
+        "ex:imageDimensions": { "minWidth": 1024, "maxWidth": 4096, "minHeight": 1024, "maxHeight": 4096, "avgWidth": 2048, "avgHeight": 2048, "aspectRatioDistribution": "1:1" },
+        "ex:colorMode": "grayscale", "ex:channels": 1,
+        "ex:fileSizeBytes": { "avg": 524288, "min": 131072, "max": 1048576 },
+        "ex:modality": "X-ray"
+      },
+      "ex:annotationStats": {
+        "@type": "ex:AnnotationStatistics",
+        "ex:numAnnotations": 32000, "ex:numClasses": 4, "ex:classes": ["nodule", "fracture", "opacity", "device"],
+        "ex:objectsPerImage": { "min": 0, "max": 6, "avg": 3.76, "median": 3 },
+        "ex:boundingBoxStats": { "avgRelativeWidth": 0.18, "avgRelativeHeight": 0.22, "avgAspectRatio": 0.82, "relativeAreaDistribution": "beta(2,5)", "shapeNotes": "rectangular" }
+      }
+    }
+  ]
+    },
+    "datasetId": "mock-dataset-id-2"
   },
   "requestId": "unique-request-id-12345",
   "timestamp": "2025-06-08T18:54:00.000Z"
