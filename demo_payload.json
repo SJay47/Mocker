@@ -1,0 +1,38 @@
+{
+  "experimentId": "final-test-aliased-root-exp",
+  "candidateSearchJobId": "final-test-aliased-root-job",
+  "rootFingerprintId": "b3590f97-f510-4860-b463-91e0dd72a288",
+  "semanticallySimilarCandidates": [
+    {
+      "fingerprintId": "e5555813-19a2-4b90-9a25-cebdb53b3af9",
+      "organizationId": "org-gold-aliases-diff-cat",
+      "semanticScore": 0.89,
+      "resolvedMappings": [
+        {
+          "root_field": { "id": "patient_demographics/age", "name": "age", "dataType": "sc:Integer" },
+          "candidate_field": { "id": "patient_data/patient_age", "name": "patient_age", "dataType": "sc:Integer" },
+          "comparison_type": "statistical"
+        }
+      ]
+    },
+    {
+      "fingerprintId": "b7a784b0-b801-44e2-a626-3c050fe15ee7",
+      "organizationId": "",
+      "semanticScore": 0.93,
+      "resolvedMappings": [
+        {
+          "root_field": { "id": "patient_demographics/age", "name": "age", "dataType": "sc:Integer" },
+          "candidate_field": { "id": "patient_data/age", "name": "age", "dataType": "sc:Integer" },
+          "comparison_type": "statistical"
+        },
+        {
+          "root_field": { "id": "patient_demographics/diagnosis", "name": "diagnosis", "dataType": "sc:Text" },
+          "candidate_field": { "id": "patient_data/diagnosis_code", "name": "diagnosis_code", "dataType": "sc:Text" },
+          "comparison_type": "statistical"
+        }
+      ]
+    }
+  ]
+}
+
+
