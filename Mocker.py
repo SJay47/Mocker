@@ -12,9 +12,8 @@ from typing import Any, Dict, List, Optional
 import requests
 from faker import Faker
 
-# --- UNCHANGED: Basic Setup & API Config ---
 ROOT_DIR = Path(__file__).resolve().parent
-DEFAULT_TPL = ROOT_DIR / "templates" / "master_fingerprint_template.json" 
+DEFAULT_TPL = ROOT_DIR / "templates" / "master_fingerprint_template.json"
 DEFAULT_OUTDIR = ROOT_DIR / "mock_outputs"
 
 API_CONFIG = {
@@ -31,151 +30,133 @@ fake = Faker()
 random.seed()
 Faker.seed()
 
-# --- NEW: Field Name Variation Dictionary ---
-# This dictionary drives the variation in field names to test semantic mapping.
-FIELD_NAME_VARIANTS = {
-    # --- Variations for Patient Demographics ---
-    "patient_demographics/patient_age": [
-        "age", 
-        "Age", 
-        "patient_age",
-        "Patient Age", 
-        "patient_age_in_years",
-        "age_years",
-        "DEMO_AGE",
-        "ageAtAdmission",
-        "Age_in_Yr"
-    ],
-    "patient_demographics/patient_blood_type": [
-        "blood_type", 
-        "Blood Group", 
-        "BloodType",
-        "patient_blood_group",
-        "bloodgroup",
-        "BT",
-        "LAB_BloodType"
-    ],
-
-    # --- Variations for Vital Signs ---
-    "vital_signs/bmi": [
-        "BMI", 
-        "body_mass_index", 
-        "Body Mass Index",
-        "patient_bmi_value",
-        "vitals_bmi",
-        "V_BMI"
-    ],
-
-    # --- Variations for Clinical Notes ---
-    "clinical_notes/notes": [
-        "notes", 
-        "clinical_notes", 
-        "physician_notes",
-        "Clinical Observations",
-        "doctor_notes",
-        "progress_notes",
-        "TXT_NOTES"
-    ],
-    
-    # --- NEW: Adding variations for other potential fields you might add ---
-    "patient_demographics/gender": [
-        "gender",
-        "sex",
-        "Patient Gender",
-        "sex_of_patient",
-        "DEMO_GNDR"
-    ],
-    "vital_signs/heart_rate": [
-        "heart_rate",
-        "HeartRate",
-        "pulse",
-        "vitals_hr",
-        "HR"
-    ],
-    "vital_signs/blood_pressure_systolic": [
-        "systolic_bp",
-        "BloodPressure_Systolic",
-        "SBP",
-        "V_SYS"
-    ],
-    "vital_signs/blood_pressure_diastolic": [
-        "diastolic_bp",
-        "BloodPressure_Diastolic",
-        "DBP",
-        "V_DIA"
-    ],
-    "lab_results/cholesterol": [
-        "cholesterol",
-        "Total Cholesterol",
-        "CHOL_Total",
-        "lab_chol"
-    ],
-    "medical_condition/diagnosis": [
-        "diagnosis",
-        "primary_diagnosis",
-        "Condition",
-        "ICD10_Code",
-        "DIAG_PRIMARY"
-    ]
-}
-
-
-
-# --- NEW: Expanded and More Realistic Fingerprint Profiles ---
-# Each profile now controls which record sets, extensions, and field descriptions to include.
-FINGERPRINT_PROFILES = [
+MEDICAL_DOMAINS = [
     {
-        "name": "Rich_MultiModal",
-        "record_set_ids": ["patient_demographics", "vital_signs", "clinical_notes", "medical_images"],
-        "extensions_to_keep": ["ex:", "stat:", "jsd:"], # Keep all extensions
-        "include_descriptions": True,
-        "weight": 10
+        "name": "Cardiology",
+        "description": "Dataset focusing on cardiovascular health, including patient vitals, lab results for heart conditions, and cardiac imaging reports.",
+        "jsd_tokens": ["cardiac", "artery", "atrial", "ventricle", "aortic", "stenosis", "echocardiogram", "hypertension", "cholesterol", "stent", "infarction", "fibrillation"],
+        "fields": {
+            "patient_demographics/patient_age": {"variants": ["age", "Patient Age", "age_at_scan"], "description": "Patient's age at the time of cardiac assessment.", "params": {"min": 40, "max": 95}},
+            "patient_demographics/patient_blood_type": {"variants": ["blood_type", "Blood Group", "patient_blood_group"], "description": "Patient's blood group, relevant for surgical procedures."},
+            "vital_signs/bmi": {"variants": ["BMI", "body_mass_index"], "description": "Body Mass Index, a key risk factor for heart disease.", "params": {"min": 18, "max": 45}},
+            "vital_signs/blood_pressure": {"variants": ["blood_pressure", "BP", "Systolic/Diastolic"], "description": "Blood pressure reading (e.g., 120/80 mmHg).", "params": {"categories": ["120/80", "130/85", "140/90", "110/70"]}},
+            "lab_results/cholesterol": {"variants": ["cholesterol", "Total Cholesterol", "CHOL_Total"], "description": "Total cholesterol level in mg/dL.", "params": {"min": 150, "max": 300}},
+            "clinical_notes/notes": {"variants": ["Cardiology Notes", "consultation_report", "ECHO_notes"], "description": "Clinical notes from cardiology consultations and echocardiograms."},
+            "medical_condition/diagnosis": {"variants": ["diagnosis", "Condition", "Primary Cardiac Diagnosis"], "description": "Primary diagnosis related to cardiovascular disease.", "params": {"categories": ["Hypertension", "Coronary Artery Disease", "Myocardial Infarction", "Heart Failure", "Arrhythmia"]}},
+            "medical_images/modality": "Echocardiogram"
+        }
     },
     {
-        "name": "Classic_Tabular_With_Stats",
-        "record_set_ids": ["patient_demographics", "vital_signs"],
-        "extensions_to_keep": ["stat:"], # Only keep statistics
-        "include_descriptions": True,
-        "weight": 20
+        "name": "Neurology",
+        "description": "A collection of neurological patient data, including demographics, cognitive assessments, and brain imaging scans like MRIs.",
+        "jsd_tokens": ["neuron", "synapse", "cognitive", "mri", "lesion", "seizure", "alzheimer", "parkinson", "stroke", "axon", "neuropathy", "cortical"],
+        "fields": {
+            "patient_demographics/patient_age": {"variants": ["age", "Age at Onset", "patient_age_neuro"], "description": "Patient's age at the onset of neurological symptoms.", "params": {"min": 25, "max": 90}},
+            "cognitive_assessment/moca_score": {"variants": ["MoCA Score", "Cognitive Score", "Montreal Cognitive Assessment"], "description": "Score from the Montreal Cognitive Assessment (MoCA), ranging from 0 to 30.", "params": {"min": 5, "max": 30}},
+            "clinical_notes/notes": {"variants": ["Neurology Progress Notes", "mri_findings_summary", "Clinical Observations"], "description": "Detailed notes on patient's neurological status and MRI findings."},
+            "medical_condition/diagnosis": {"variants": ["diagnosis", "Neurological Condition", "Final Diagnosis"], "description": "Primary neurological diagnosis.", "params": {"categories": ["Alzheimer's Disease", "Parkinson's Disease", "Multiple Sclerosis", "Stroke", "Epilepsy"]}},
+            "medical_images/modality": "MRI"
+        }
     },
     {
-        "name": "Imaging_Only_No_Extensions",
-        "record_set_ids": ["medical_images"],
-        "extensions_to_keep": [], # Strip all extensions
-        "include_descriptions": True,
-        "weight": 15
+        "name": "Oncology",
+        "description": "Dataset containing information on cancer patients, including tumor characteristics, treatment protocols, and genetic markers.",
+        "jsd_tokens": ["tumor", "cell", "chemotherapy", "lesion", "radiation", "stage", "grade", "biopsy", "metastatic", "carcinoma", "adenocarcinoma", "lymphoma"],
+        "fields": {
+            "patient_demographics/patient_age": {"variants": ["age_at_diagnosis", "Age", "patient_age"], "description": "Age of the patient at the time of cancer diagnosis."},
+            "tumor_markers/tumor_size": {"variants": ["Tumor Size (cm)", "tumor_diameter", "Lesion Size"], "description": "The largest dimension of the primary tumor in centimeters.", "params": {"min": 0.5, "max": 15}},
+            "tumor_markers/cancer_stage": {"variants": ["Cancer Stage", "Stage", "TNM Stage"], "description": "The stage of the cancer at diagnosis.", "params": {"categories": ["Stage I", "Stage II", "Stage III", "Stage IV"]}},
+            "clinical_notes/notes": {"variants": ["Oncology Report", "biopsy_results", "treatment_summary"], "description": "Notes detailing biopsy results, pathology, and treatment history."},
+            "medical_condition/diagnosis": {"variants": ["Cancer Type", "Histology", "Oncological Diagnosis"], "description": "The specific type of cancer.", "params": {"categories": ["Breast Cancer", "Lung Cancer", "Prostate Cancer", "Colorectal Cancer", "Melanoma"]}},
+            "medical_images/modality": "PET-CT"
+        }
     },
     {
-        "name": "Text_Heavy_With_JSD",
-        "record_set_ids": ["patient_demographics", "clinical_notes"],
-        "extensions_to_keep": ["jsd:"], # Only keep JSD
-        "include_descriptions": True,
-        "weight": 15
+        "name": "Pulmonology",
+        "description": "Focuses on respiratory diseases, with data on lung function tests, patient-reported outcomes, and chest X-rays.",
+        "jsd_tokens": ["respiratory", "lung", "bronchial", "fev1", "fvc", "spirometry", "copd", "asthma", "pleural", "inhaler", "pulmonary", "ventilation"],
+        "fields": {
+            "patient_demographics/patient_age": {"variants": ["age", "patient_age"], "description": "Patient's age."},
+            "lung_function/fev1": {"variants": ["FEV1", "Forced Expiratory Volume 1s", "pulmonary_fev1"], "description": "Forced Expiratory Volume in 1 second, a measure of lung function.", "params": {"min": 1, "max": 5}},
+            "lung_function/fvc": {"variants": ["FVC", "Forced Vital Capacity", "pulmonary_fvc"], "description": "Forced Vital Capacity, a measure of lung capacity.", "params": {"min": 1, "max": 6}},
+            "clinical_notes/notes": {"variants": ["Pulmonology Notes", "chest_xray_report", "Spirometry Notes"], "description": "Clinical notes regarding patient's respiratory health and test results."},
+            "medical_condition/diagnosis": {"variants": ["diagnosis", "Respiratory Condition"], "description": "Primary respiratory diagnosis.", "params": {"categories": ["COPD", "Asthma", "Idiopathic Pulmonary Fibrosis", "Pneumonia"]}},
+            "medical_images/modality": "X-ray"
+        }
     },
     {
-        "name": "Abbreviated_Clinical_No_Descriptions",
-        "record_set_ids": ["patient_demographics", "vital_signs"],
-        "extensions_to_keep": [], # No extensions
-        "include_descriptions": False, # Test semantic matching on names alone
-        "weight": 15
+        "name": "Gastroenterology",
+        "description": "Data related to digestive system disorders, including endoscopy results, lab tests, and patient history.",
+        "jsd_tokens": ["gastrointestinal", "endoscopy", "colon", "stomach", "liver", "hepatic", "enzyme", "colitis", "crohns", "ulcer", "biopsy", "polyp"],
+        "fields": {
+            "patient_demographics/patient_age": {"variants": ["age", "patient_age_gi"], "description": "Patient's age at time of consultation."},
+            "lab_results/liver_enzymes": {"variants": ["Liver Function Tests", "AST/ALT", "liver_enzymes"], "description": "Key liver enzyme levels (AST/ALT).", "params": {"min": 10, "max": 200}},
+            "clinical_notes/notes": {"variants": ["Endoscopy Report", "GI Consult Notes", "pathology_report"], "description": "Detailed findings from gastrointestinal procedures."},
+            "medical_condition/diagnosis": {"variants": ["GI Diagnosis", "condition"], "description": "Diagnosis related to the digestive system.", "params": {"categories": ["Crohn's Disease", "Ulcerative Colitis", "IBS", "Gastroesophageal Reflux Disease (GERD)"]}},
+            "medical_images/modality": "Endoscopy"
+        }
     },
     {
-        "name": "Purely_Descriptive_No_Records",
-        "record_set_ids": [], # No record sets, like some real examples
-        "extensions_to_keep": [],
-        "include_descriptions": True,
-        "weight": 10
+        "name": "Nephrology",
+        "description": "Dataset for kidney-related diseases, focusing on renal function tests and patient demographics.",
+        "jsd_tokens": ["renal", "kidney", "nephron", "glomerular", "dialysis", "creatinine", "egfr", "ckd", "tubular", "urinalysis", "biopsy", "transplant"],
+        "fields": {
+            "patient_demographics/patient_age": {"variants": ["age", "patient_age"], "description": "Patient's age."},
+            "lab_results/creatinine": {"variants": ["Serum Creatinine", "Creatinine", "renal_creatinine"], "description": "Serum creatinine level, a marker for kidney function.", "params": {"min": 0.6, "max": 4.0}},
+            "lab_results/egfr": {"variants": ["eGFR", "Estimated Glomerular Filtration Rate", "renal_egfr"], "description": "eGFR, a key indicator of kidney health.", "params": {"min": 20, "max": 110}},
+            "clinical_notes/notes": {"variants": ["Nephrology Consult", "renal_biopsy_notes"], "description": "Clinical notes from nephrology specialists."},
+            "medical_condition/diagnosis": {"variants": ["diagnosis", "Renal Disease"], "description": "Primary diagnosis for kidney condition.", "params": {"categories": ["Chronic Kidney Disease (CKD)", "Acute Kidney Injury (AKI)", "Glomerulonephritis", "Polycystic Kidney Disease"]}},
+            "medical_images/modality": "Ultrasound"
+        }
     },
     {
-        "name": "Minimalist_Vital_Signs_Only",
-        "record_set_ids": ["vital_signs"],
-        "extensions_to_keep": [],
-        "include_descriptions": False,
-        "weight": 15
+        "name": "Endocrinology",
+        "description": "Data focusing on endocrine disorders, primarily diabetes, including blood glucose levels and HbA1c measurements.",
+        "jsd_tokens": ["endocrine", "hormone", "gland", "diabetes", "glucose", "insulin", "hba1c", "thyroid", "pituitary", "adrenal", "metabolism"],
+        "fields": {
+            "patient_demographics/patient_age": {"variants": ["age", "patient_age_endo"], "description": "Patient's age."},
+            "lab_results/hba1c": {"variants": ["HbA1c", "Hemoglobin A1c"], "description": "Glycated hemoglobin (HbA1c), an indicator of long-term glucose control.", "params": {"min": 5.0, "max": 14.0}},
+            "lab_results/glucose": {"variants": ["Fasting Glucose", "blood_sugar"], "description": "Fasting blood glucose level.", "params": {"min": 80, "max": 350}},
+            "clinical_notes/notes": {"variants": ["Endocrinology Notes", "diabetes_management_plan"], "description": "Notes related to patient's endocrine health and treatment."},
+            "medical_condition/diagnosis": {"variants": ["diagnosis", "Endocrine Disorder"], "description": "Primary endocrine diagnosis.", "params": {"categories": ["Type 1 Diabetes", "Type 2 Diabetes", "Hypothyroidism", "Hyperthyroidism"]}},
+        }
     },
+    {
+        "name": "Orthopedics",
+        "description": "Dataset of orthopedic cases, including type of injury, surgical procedure details, and post-operative outcomes.",
+        "jsd_tokens": ["orthopedic", "bone", "joint", "fracture", "ligament", "tendon", "arthroplasty", "fusion", "xray", "femur", "tibia", "cartilage"],
+        "fields": {
+            "patient_demographics/patient_age": {"variants": ["age", "age_at_injury"], "description": "Patient's age at the time of injury."},
+            "injury_details/body_part": {"variants": ["Affected Body Part", "Injury Location", "body_part"], "description": "Location of the orthopedic injury.", "params": {"categories": ["Knee", "Hip", "Shoulder", "Spine", "Ankle"]}},
+            "injury_details/procedure": {"variants": ["Surgical Procedure", "treatment", "ortho_procedure"], "description": "The orthopedic procedure performed.", "params": {"categories": ["Arthroplasty", "ACL Reconstruction", "Spinal Fusion", "Fracture Repair"]}},
+            "clinical_notes/notes": {"variants": ["Orthopedic Surgery Notes", "post_op_report", "physio_notes"], "description": "Surgical and post-operative physiotherapy notes."},
+            "medical_condition/diagnosis": {"variants": ["injury_type", "Orthopedic Diagnosis"], "description": "Specific type of orthopedic injury or condition.", "params": {"categories": ["Femur Fracture", "ACL Tear", "Rotator Cuff Tear", "Osteoarthritis"]}},
+            "medical_images/modality": "X-ray"
+        }
+    },
+    {
+        "name": "Infectious Disease",
+        "description": "Dataset tracking infectious diseases, including pathogen identification, patient symptoms, and treatment responses.",
+        "jsd_tokens": ["infection", "bacteria", "virus", "antibiotic", "culture", "sepsis", "pathogen", "viral_load", "fever", "leukocyte", "resistance"],
+         "fields": {
+            "patient_demographics/patient_age": {"variants": ["age", "patient_age_infection"], "description": "Patient's age."},
+            "lab_results/pathogen": {"variants": ["Pathogen", "Infectious Agent", "culture_result"], "description": "The identified pathogen causing the infection.", "params": {"categories": ["Staphylococcus aureus", "Influenza A", "SARS-CoV-2", "Escherichia coli"]}},
+            "clinical_notes/notes": {"variants": ["Infectious Disease Consult", "symptom_log"], "description": "Notes detailing patient symptoms and response to treatment."},
+            "medical_condition/diagnosis": {"variants": ["Infection Type", "disease"], "description": "The specific infectious disease diagnosed.", "params": {"categories": ["Influenza", "COVID-19", "Tuberculosis", "Sepsis"]}},
+        }
+    }
 ]
 
-# --- UNCHANGED HELPER FUNCTIONS: rand_float, _norm_dist ---
+FINGERPRINT_PROFILES = [
+    {"name": "Rich_MultiModal", "record_set_ids": "all", "extensions_to_keep": ["ex:", "stat:", "jsd:"], "include_descriptions": True, "weight": 10},
+    {"name": "Classic_Tabular_With_Stats", "record_set_ids": "non_imaging", "extensions_to_keep": ["stat:"], "include_descriptions": True, "weight": 20},
+    {"name": "Imaging_Only", "record_set_ids": ["medical_images"], "extensions_to_keep": ["ex:"], "include_descriptions": True, "weight": 15},
+    {"name": "Text_Heavy_With_JSD", "record_set_ids": ["patient_demographics", "clinical_notes", "medical_condition"], "extensions_to_keep": ["jsd:", "stat:"], "include_descriptions": True, "weight": 15},
+    {"name": "Abbreviated_Clinical_No_Descriptions", "record_set_ids": "non_imaging", "extensions_to_keep": [], "include_descriptions": False, "weight": 15},
+    {"name": "Purely_Descriptive_No_Records", "record_set_ids": [], "extensions_to_keep": [], "include_descriptions": True, "weight": 10},
+    {"name": "Minimalist_Tabular", "record_set_ids": ["patient_demographics", "vital_signs", "lab_results"], "extensions_to_keep": [], "include_descriptions": False, "weight": 15},
+]
+
 def rand_float(lo: float, hi: float, digits: int = 2) -> float:
     return round(random.uniform(lo, hi), digits)
 
@@ -183,7 +164,6 @@ def _norm_dist(v):
     s = sum(v) or 1
     return [round(x / s, 6) for x in v]
 
-# --- UNCHANGED MOCKING FUNCTIONS: These generate the full data before it's tailored by a profile ---
 def mock_dataset_stats() -> dict:
     pos = fake.random_int(100, 10000)
     neg = fake.random_int(100, 10000)
@@ -200,50 +180,69 @@ def mock_dataset_stats() -> dict:
         "ex:modelSignature": f"sha256:{fake.sha256()}",
     }
 
-def mock_numeric_stats(template: dict) -> dict:
+def mock_numeric_stats(template: dict, params: Optional[Dict] = None) -> dict:
+    params = params or {}
     stats = {"@type": "stat:Statistics"}
-    if "stat:min" in template: stats["stat:min"] = rand_float(10, 40)
-    if "stat:max" in template: stats["stat:max"] = rand_float(80, 150)
-    if "stat:mean" in template: stats["stat:mean"] = rand_float(40, 80)
-    if "stat:median" in template: stats["stat:median"] = stats["stat:mean"] + rand_float(-5, 5)
-    if "stat:stdDev" in template: stats["stat:stdDev"] = rand_float(5, 20)
-    if "stat:unique_count" in template: stats["stat:unique_count"] = fake.random_int(50, 100)
-    if "stat:missing_count" in template: stats["stat:missing_count"] = fake.random_int(0, 500)
-    if "stat:skewness" in template: stats["stat:skewness"] = rand_float(-1, 1)
-    if "stat:kurtosis" in template: stats["stat:kurtosis"] = rand_float(-1, 1)
-    if "stat:histogram" in template:
-        num_bins = len(template["stat:histogram"]["stat:bins"])
-        new_bins = sorted([rand_float(10, 200) for _ in range(num_bins)])
+    stats_template_block = template  
+    min_val = params.get("min", stats_template_block.get("stat:min", 10))
+    max_val = params.get("max", stats_template_block.get("stat:max", 150))
+
+    mean_val = rand_float(min_val, max_val)
+    stats["stat:min"] = rand_float(min_val, min_val + (max_val - min_val) * 0.2)
+    stats["stat:max"] = rand_float(max_val - (max_val - min_val) * 0.2, max_val)
+    stats["stat:mean"] = mean_val
+    stats["stat:median"] = mean_val + rand_float(-5, 5)
+    stats["stat:stdDev"] = rand_float(5, 20)
+    stats["stat:unique_count"] = fake.random_int(50, 100)
+    stats["stat:missing_count"] = fake.random_int(0, 500)
+    stats["stat:skewness"] = rand_float(-1, 1)
+    stats["stat:kurtosis"] = rand_float(-1, 1)
+    if "stat:histogram" in stats_template_block:
+        num_bins = random.randint(6, 10)
+        bins = sorted([rand_float(stats["stat:min"], stats["stat:max"]) for _ in range(num_bins)])
+        bins[0] = round(stats["stat:min"], 2)
+        bins[-1] = round(stats["stat:max"], 2)
+        bins = sorted(list(set(bins)))
+        counts = [fake.random_int(100, 3000) for _ in range(len(bins))]
         stats["stat:histogram"] = {
-            "stat:bins": new_bins,
-            "stat:counts": [fake.random_int(100, 3000) for _ in range(num_bins - 1)],
+            "stat:bins": bins,
+            "stat:counts": counts
         }
+
     return stats
 
-def mock_categorical_stats(template: dict) -> dict:
+def mock_categorical_stats(template: dict, params: Optional[Dict] = None) -> dict:
+    params = params or {}
     stats = {"@type": "stat:Statistics"}
-    category_template = template.get("stat:category_frequencies", {})
-    original_categories = list(category_template.keys())
-    if "stat:unique_count" in template: stats["stat:unique_count"] = len(original_categories)
-    if "stat:missing_count" in template: stats["stat:missing_count"] = fake.random_int(0, 500)
-    if "stat:mode" in template and original_categories: stats["stat:mode"] = random.choice(original_categories)
-    if "stat:mode_frequency" in template: stats["stat:mode_frequency"] = fake.random_int(1000, 5000)
-    if "stat:entropy" in template: stats["stat:entropy"] = rand_float(1, 4)
-    if original_categories:
-        stats["stat:category_frequencies"] = {category: fake.random_int(100, 3000) for category in original_categories}
+
+    if "categories" in params:
+        categories = params["categories"]
+    else:
+        categories = list(template.get("stat:statistics", {}).get("stat:category_frequencies", {}).keys())
+
+    stats["stat:unique_count"] = len(categories)
+    stats["stat:missing_count"] = fake.random_int(0, 500)
+    if categories:
+        stats["stat:mode"] = random.choice(categories)
+        stats["stat:mode_frequency"] = fake.random_int(1000, 5000)
+        stats["stat:category_frequencies"] = {cat: fake.random_int(100, 3000) for cat in categories}
+
+    stats["stat:entropy"] = rand_float(1, 4)
     return stats
 
-def mock_image_stats() -> dict:
+def mock_image_stats(params: Optional[Dict] = None) -> dict:
+    params = params or {}
     min_w, max_w = sorted([fake.random_int(256, 1024), fake.random_int(1024, 4096)])
     min_h, max_h = sorted([fake.random_int(256, 1024), fake.random_int(1024, 4096)])
+    modality = params.get("modality", random.choice(["X-ray", "MRI", "CT Scan"]))
     return {
         "@type": "ex:ImageStatistics", "ex:numImages": fake.random_int(500, 10000),
         "ex:imageDimensions": {"ex:minWidth": min_w, "ex:maxWidth": max_w, "ex:minHeight": min_h, "ex:maxHeight": max_h},
-        "ex:colorMode": random.choice(["grayscale", "RGB"]), "ex:modality": random.choice(["X-ray", "MRI", "CT Scan"]),
+        "ex:colorMode": random.choice(["grayscale", "RGB"]), "ex:modality": modality,
     }
 
 def mock_annotation_stats() -> dict:
-    classes = sorted({*fake.words(nb=random.randint(2, 8), ext_word_list=["nodule", "fracture", "tumor"])})
+    classes = sorted({*fake.words(nb=random.randint(2, 8), ext_word_list=["nodule", "fracture", "tumor", "lesion", "device"])})
     return {
         "@type": "ex:AnnotationStatistics", "ex:numAnnotations": fake.random_int(1000, 50000),
         "ex:numClasses": len(classes), "ex:classes": classes,
@@ -251,58 +250,104 @@ def mock_annotation_stats() -> dict:
         "ex:boundingBoxStats": {"ex:avgRelativeWidth": rand_float(0.1, 0.5), "ex:avgRelativeHeight": rand_float(0.1, 0.5)},
     }
 
-def mock_jsd_stats() -> dict:
-    tokens = [fake.word() for _ in range(5)]
+def mock_jsd_stats(domain_tokens: List[str]) -> dict:
+    if not domain_tokens:
+        domain_tokens = [fake.word() for _ in range(10)]
+    num_tokens_to_sample = random.randint(5, min(10, len(domain_tokens)))
+    tokens = random.sample(domain_tokens, num_tokens_to_sample)
     probs = _norm_dist([random.random() for _ in tokens])
     return {
-        "@type": "jsd:TextDistribution", "jsd:total_records_analyzed": fake.random_int(500, 10000),
-        "jsd:language": "en", "jsd:vocabulary_size": len(tokens),
+        "@type": "jsd:TextDistribution",
+        "jsd:total_records_analyzed": fake.random_int(500, 10000),
+        "jsd:language": "en",
+        "jsd:vocabulary_size": len(tokens),
         "jsd:top_k_tokens": [{"jsd:token": t, "jsd:frequency": p} for t, p in zip(tokens, probs)],
         "jsd:token_probability_vector": probs,
     }
 
-# --- REWRITTEN/NEW: Main logic for creating and tailoring fingerprints ---
-
 def _strip_unwanted_keys(node: Any, allowed_prefixes: List[str]) -> Any:
-    """Recursively removes keys from a dictionary that do not start with an allowed prefix."""
     if isinstance(node, dict):
-        # Create a copy of keys to iterate over, as we'll be modifying the dict
         for key in list(node.keys()):
-            # Check if the key is a custom extension (e.g., "ex:datasetStats")
             if ":" in key and not any(key.startswith(prefix) for prefix in allowed_prefixes):
                 del node[key]
             else:
-                # Recurse into the value
                 node[key] = _strip_unwanted_keys(node[key], allowed_prefixes)
     elif isinstance(node, list):
-        # Recurse into each item in the list
         return [_strip_unwanted_keys(item, allowed_prefixes) for item in node]
     return node
 
-def create_fingerprint(template: Dict, profile: Dict) -> Dict:
-    """Creates a single mocked fingerprint, tailored by a profile."""
-    
-    # 1. Generate the full-featured fingerprint from the master template
-    fp_mocked = generate_mock_data(deepcopy(template))
-    croissant_body = fp_mocked["data"]["rawFingerprintJson"]
-    
-    # 2. Apply Profile: Filter Record Sets
-    all_record_sets = croissant_body["recordSet"]
-    profiled_record_sets = [rs for rs in all_record_sets if rs["@id"] in profile["record_set_ids"]]
-    croissant_body["recordSet"] = profiled_record_sets
+def generate_mock_data(node: Any, domain: Dict) -> Any:
+    """Recursively traverses the template and replaces values with mocked data."""
+    domain_fields = domain["fields"]
+    if isinstance(node, dict):
+        if "@type" in node and node["@type"] == "cr:Field":
+            field_id = node["@id"]
+            if field_id in domain_fields:
+                params = domain_fields[field_id].get("params")
+                if "stat:statistics" in node:
+                    stats_template = node["stat:statistics"]
+                    if node["dataType"] in ["sc:Integer", "sc:Float"]:
+                        node["stat:statistics"] = mock_numeric_stats(stats_template, params)
+                    else:
+                        node["stat:statistics"] = mock_categorical_stats(stats_template, params)
+                if "jsd:textDistribution" in node:
+                    domain_token_list = domain.get("jsd_tokens", [])
+                    node["jsd:textDistribution"] = mock_jsd_stats(domain_token_list)
+                    
+        if "ex:imageStats" in node:
+            node["ex:imageStats"] = mock_image_stats({"modality": domain_fields.get("medical_images/modality")})
+        if "ex:annotationStats" in node:
+            node["ex:annotationStats"] = mock_annotation_stats()
+        if "ex:datasetStats" in node:
+            node["ex:datasetStats"] = mock_dataset_stats()
 
-    # 3. Apply Profile: Vary field names for semantic matching tests
+        return {k: generate_mock_data(v, domain) for k, v in node.items()}
+
+    if isinstance(node, list):
+        return [generate_mock_data(item, domain) for item in node]
+
+    return node
+
+def create_fingerprint(template: Dict, profile: Dict, domain: Dict) -> Dict:
+    """Creates a single mocked fingerprint, tailored by a profile and a medical domain."""
+
+    fp_template = deepcopy(template)
+    croissant_body = fp_template["data"]["rawFingerprintJson"]
+
+    domain_field_keys = set(domain["fields"].keys())
+    filtered_record_sets = []
+    for rs in croissant_body.get("recordSet", []):
+        retained_fields = [field for field in rs.get("field", []) if field["@id"] in domain_field_keys]
+        if retained_fields:
+            rs["field"] = retained_fields
+            filtered_record_sets.append(rs)
+        elif rs["@id"] == "medical_images" and "medical_images/modality" in domain_field_keys:
+             filtered_record_sets.append(rs)
+
+    croissant_body["recordSet"] = filtered_record_sets
+
+    domain_fields_with_new_ids = {}
     for rs in croissant_body["recordSet"]:
         for field in rs.get("field", []):
             original_id = field["@id"]
-            if original_id in FIELD_NAME_VARIANTS:
-                new_name = random.choice(FIELD_NAME_VARIANTS[original_id])
-                # To keep it simple, we'll use the new name for both name and ID.
-                # A more complex system could create a separate ID.
-                field["name"] = new_name
-                field["@id"] = f"{rs['@id']}/{new_name.lower().replace(' ', '_')}"
+            domain_field_info = domain["fields"][original_id]
+            new_name = random.choice(domain_field_info["variants"])
+            field["name"] = new_name
+            field["description"] = domain_field_info["description"]
+            domain_fields_with_new_ids[original_id] = domain_field_info
+    fp_mocked = generate_mock_data(fp_template, domain)
+    croissant_body = fp_mocked["data"]["rawFingerprintJson"]
+    profile_rs_ids = profile["record_set_ids"]
+    all_domain_rs_ids = {rs["@id"] for rs in croissant_body["recordSet"]}
 
-    # 4. Apply Profile: Handle descriptions
+    if profile_rs_ids == "all":
+        final_rs_ids = all_domain_rs_ids
+    elif profile_rs_ids == "non_imaging":
+        final_rs_ids = {id for id in all_domain_rs_ids if id != "medical_images"}
+    else:
+        final_rs_ids = set(profile_rs_ids)
+
+    croissant_body["recordSet"] = [rs for rs in croissant_body["recordSet"] if rs["@id"] in final_rs_ids]
     if not profile.get("include_descriptions", True):
         croissant_body["description"] = "A minimally described dataset."
         for rs in croissant_body["recordSet"]:
@@ -310,41 +355,15 @@ def create_fingerprint(template: Dict, profile: Dict) -> Dict:
             for field in rs.get("field", []):
                 field.pop("description", None)
 
-    # 5. Apply Profile: Strip unwanted extensions
     allowed_prefixes = profile.get("extensions_to_keep", [])
-    # Always allow schema.org prefixes like "sc:" and our base context "cr:"
     allowed_prefixes.extend(["sc:", "cr:", "name", "description", "@", "url", "license", "distribution", "recordSet", "field", "source"])
     _strip_unwanted_keys(croissant_body, allowed_prefixes)
-
-    # 6. Finalize top-level metadata
-    croissant_body["name"] = f"Mocked Fingerprint - {profile['name']}"
-    croissant_body["description"] = croissant_body.get("description") or f"A mocked Croissant fingerprint for the '{profile['name']}' profile."
+    croissant_body["name"] = f"Mocked Dataset - {domain['name']} ({profile['name']})"
+    croissant_body["description"] = domain['description']
 
     return fp_mocked
 
-def generate_mock_data(node: Any) -> Any:
-    """Recursively traverses the template and replaces values with mocked data."""
-    if isinstance(node, dict):
-        if "stat:statistics" in node:
-            stats_template = node["stat:statistics"]
-            if "stat:min" in stats_template or "stat:mean" in stats_template:
-                node["stat:statistics"] = mock_numeric_stats(stats_template)
-            else:
-                node["stat:statistics"] = mock_categorical_stats(stats_template)
-        if "jsd:textDistribution" in node:
-            node["jsd:textDistribution"] = mock_jsd_stats()
-        if "ex:imageStats" in node:
-            node["ex:imageStats"] = mock_image_stats()
-        if "ex:annotationStats" in node:
-            node["ex:annotationStats"] = mock_annotation_stats()
-        if "ex:datasetStats" in node:
-            node["ex:datasetStats"] = mock_dataset_stats()
-        return {k: generate_mock_data(v) for k, v in node.items()}
-    if isinstance(node, list):
-        return [generate_mock_data(item) for item in node]
-    return node
 
-# --- UNCHANGED: API Interaction and File I/O ---
 def get_access_token() -> Optional[str]:
     payload = {
         "client_id": API_CONFIG["KEYCLOAK_CLIENT_ID"],
@@ -373,7 +392,7 @@ def post_fingerprint(fp: Dict, token: str) -> bool:
         error_body = e.response.text if hasattr(e, "response") and e.response else "No response body."
         print(f"    ✗ POST failed ({status}): {e}\n      Response Body: {error_body}")
         return False
-    
+
 def read_template(p: Path) -> Dict:
     with open(p, encoding="utf-8") as f:
         return json.load(f)
@@ -386,14 +405,13 @@ def save_fingerprint(fp: Dict, filename: str, outdir: Path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-c", "--count", type=int, default=20, help="Number of mocks to generate.")
-    ap.add_argument("-o", "--output-dir", type=Path, default=DEFAULT_OUTDIR) 
+    ap.add_argument("-c", "--count", type=int, default=50, help="Number of mocks to generate.")
+    ap.add_argument("-o", "--output-dir", type=Path, default=DEFAULT_OUTDIR)
     ap.add_argument("-t", "--template-file", type=Path, default=DEFAULT_TPL)
     ap.add_argument("--send", action="store_true", help="Send generated fingerprints to the API.")
     args = ap.parse_args()
 
     master = read_template(args.template_file)
-    # Create a weighted list of profiles to choose from
     weighted_profiles = [p for p in FINGERPRINT_PROFILES for _ in range(p["weight"])]
 
     token = get_access_token() if args.send else None
@@ -403,16 +421,15 @@ def main():
 
     print(f"Generating {args.count} mock fingerprint(s) from {args.template_file.name}")
     for i in range(1, args.count + 1):
-        prof = random.choice(weighted_profiles)
-        print(f"  • ({i}/{args.count}) profile: {prof['name']}")
-        
-        # The main creation logic is now in this function
-        fp = create_fingerprint(master, prof)
-        
-        # Assign a unique datasetId for the outer wrapper
+        domain = random.choice(MEDICAL_DOMAINS)
+        profile = random.choice(weighted_profiles)
+        print(f"  • ({i}/{args.count}) Domain: {domain['name']}, Profile: {profile['name']}")
+
+        fp = create_fingerprint(master, profile, domain)
+
         fp["data"]["datasetId"] = f"mock-dataset-id-{fake.uuid4()}"
-        
-        fname = f"mock_{prof['name']}_{i}.json"
+
+        fname = f"mock_{domain['name']}_{profile['name']}_{i}.json"
         save_fingerprint(fp, fname, args.output_dir)
 
         if args.send and token:
