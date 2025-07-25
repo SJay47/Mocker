@@ -6,181 +6,269 @@
     "isAnonymous": true,
     "rawFingerprintJson": {
       "@context": {
-    "@language": "en",
-    "@vocab": "https://schema.org/",
-    "cr": "http://mlcommons.org/croissant/",
-    "sc": "https://schema.org/",
-    "dct": "http://purl.org/dc/terms/",
-    "stat": "https://your-startup.com/croissant-extensions/statistics/1.0/",
-    "jsd": "https://your-startup.com/croissant-extensions/jensen-shannon/1.0/",
-    "ex": "http://example.com/croissant-ext#",
-    "conformsTo": "dct:conformsTo"
-  },
-  "@type": "sc:Dataset",
-  "name": "Gold Standard - Extended Multi-Modal Medical Fingerprint",
-  "description": "A comprehensive, multi-modal fingerprint containing rich tabular data, detailed clinical notes, and annotated medical images, serving as a master template.",
-  "conformsTo": "http://mlcommons.org/croissant/1.0",
-  "url": "https://example.com/dataset/gold-standard",
-  "license": "https://creativecommons.org/publicdomain/zero/1.0/",
-  "ex:datasetStats": {
-    "@type": "ex:DatasetStatistics",
-    "ex:labelDistribution": {
-      "@type": "ex:LabelDistribution",
-      "ex:positive": 3500,
-      "ex:negative": 6500
-    },
-    "ex:labelSkewAlpha": 0.27,
-    "ex:labelEntropy": 0.93,
-    "ex:featureStatsVector": [
-      55.4,
-      15.2,
-      0.8,
-      28.6,
-      5.7,
-      0.18
-    ],
-    "ex:modelSignature": "sha256:ab12cd34ef567890..."
-  },
-  "distribution": [
-    {
-      "@type": "cr:FileObject",
-      "@id": "demographics-file",
-      "name": "demographics.csv",
-      "contentUrl": "https://example.com/files/demographics.csv",
-      "encodingFormat": "text/csv",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "@type": "cr:FileObject",
-      "@id": "vitals-file",
-      "name": "vitals.csv",
-      "contentUrl": "https://example.com/files/vitals.csv",
-      "encodingFormat": "text/csv",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
-      "@type": "cr:FileObject",
-      "@id": "notes-file",
-      "name": "notes.csv",
-      "contentUrl": "https://example.com/files/notes.csv",
-      "encodingFormat": "text/csv",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    }
-  ],
-  "recordSet": [
-    {
-      "@id": "patient_demographics",
-      "@type": "cr:RecordSet",
-      "name": "Patient Demographics",
-      "description": "Demographic attributes of patients.",
-      "field": [
+        "@language": "en",
+        "@vocab": "https://schema.org/",
+        "cr": "http://mlcommons.org/croissant/",
+        "sc": "https://schema.org/",
+        "dct": "http://purl.org/dc/terms/",
+        "stat": "https://your-startup.com/croissant-extensions/statistics/1.0/",
+        "jsd": "https://your-startup.com/croissant-extensions/jensen-shannon/1.0/",
+        "ex": "http://example.com/croissant-ext#",
+        "conformsTo": "dct:conformsTo"
+      },
+      "@type": "sc:Dataset",
+      "name": "Gold Standard Super-Template",
+      "description": "A comprehensive, multi-domain, multi-modal fingerprint template.",
+      "conformsTo": "http://mlcommons.org/croissant/1.0",
+      "url": "https://example.com/dataset/super-template",
+      "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "ex:datasetStats": {},
+      "distribution": [],
+      "recordSet": [
         {
-          "@id": "patient_demographics/patient_age",
-          "@type": "cr:Field",
-          "name": "Patient Age",
-          "description": "The age of the patient in years at the time of the record.",
-          "dataType": "sc:Integer",
-          "source": { "fileObject": { "@id": "demographics-file" }, "extract": { "column": "Patient Age" } },
-          "stat:unit": "years",
-          "stat:statistics": {
-            "@type": "stat:Statistics",
-            "stat:min": 18, "stat:max": 92, "stat:mean": 55.4, "stat:median": 56, "stat:stdDev": 15.2,
-            "stat:unique_count": 75, "stat:missing_count": 120, "stat:quartile_1": 42, "stat:quartile_3": 68,
-            "stat:percentile_5": 25, "stat:percentile_95": 85, "stat:skewness": -0.15, "stat:kurtosis": -0.4,
-            "stat:histogram": { "stat:bins": [18, 30, 40, 50, 60, 70, 80, 92], "stat:counts": [1200, 1500, 1800, 2000, 1600, 1300, 600] },
-            "stat:distribution_fit": { "stat:type": "Normal", "stat:parameters": { "mean": 55.4, "stdDev": 15.2 }, "stat:fit_score": 0.92 }
-          }
+          "@id": "patient_demographics",
+          "@type": "cr:RecordSet",
+          "name": "Patient Demographics",
+          "description": "Demographic attributes of patients.",
+          "field": [
+            {
+              "@id": "patient_demographics/patient_age",
+              "@type": "cr:Field",
+              "name": "Patient Age",
+              "description": "Patient age.",
+              "dataType": "sc:Integer",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 0, "stat:max": 100, "stat:mean": 50, "stat:histogram": {}}
+            },
+            {
+              "@id": "patient_demographics/patient_blood_type",
+              "@type": "cr:Field",
+              "name": "Patient Blood Type",
+              "description": "Patient blood group.",
+              "dataType": "sc:Text",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:category_frequencies": {"O+": 1, "A+": 1}}
+            }
+          ]
         },
         {
-          "@id": "patient_demographics/patient_blood_type",
-          "@type": "cr:Field",
-          "name": "Patient Blood Type",
-          "description": "The patient's blood group.",
-          "dataType": "sc:Text",
-           "source": { "fileObject": { "@id": "demographics-file" }, "extract": { "column": "Blood Type" } },
-          "stat:statistics": {
-            "@type": "stat:Statistics", "stat:unique_count": 8, "stat:missing_count": 50, "stat:mode": "O+", "stat:mode_frequency": 3500,
-            "stat:category_frequencies": { "O+": 3500, "A+": 2500, "B+": 1200, "O-": 800, "A-": 750, "AB+": 500, "B-": 400, "AB-": 250 },
-            "stat:entropy": 2.1
-          }
-        }
-      ]
-    },
-    {
-      "@id": "vital_signs",
-      "@type": "cr:RecordSet",
-      "name": "Vital Signs",
-      "description": "Physiological measurements collected at admission.",
-      "field": [
+          "@id": "vital_signs",
+          "@type": "cr:RecordSet",
+          "name": "Vital Signs",
+          "description": "Physiological measurements.",
+          "field": [
+            {
+              "@id": "vital_signs/bmi",
+              "@type": "cr:Field",
+              "name": "Body Mass Index",
+              "description": "Body Mass Index.",
+              "dataType": "sc:Float",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 15, "stat:max": 50, "stat:mean": 28, "stat:histogram": {}}
+            },
+            {
+              "@id": "vital_signs/blood_pressure",
+              "@type": "cr:Field",
+              "name": "Blood Pressure",
+              "description": "Blood pressure reading.",
+              "dataType": "sc:Text",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:category_frequencies": {"120/80":1}}
+            }
+          ]
+        },
         {
-          "@id": "vital_signs/bmi",
-          "@type": "cr:Field",
-          "name": "Body Mass Index (BMI)",
-          "description": "A measure of body fat based on height and weight.",
-          "dataType": "sc:Float",
-          "source": { "fileObject": { "@id": "vitals-file" }, "extract": { "column": "BMI" } },
-          "stat:statistics": {
-            "@type": "stat:Statistics", "stat:min": 16.5, "stat:max": 45.2, "stat:mean": 28.6, "stat:median": 28.1, "stat:stdDev": 5.7,
-            "stat:unique_count": 287, "stat:missing_count": 200, "stat:quartile_1": 24.5, "stat:quartile_3": 32.1,
-            "stat:percentile_5": 20.1, "stat:percentile_95": 38.9, "stat:skewness": 0.8, "stat:kurtosis": 0.3,
-            "stat:histogram": { "stat:bins": [16, 20, 25, 30, 35, 40, 45], "stat:counts": [500, 1500, 3000, 2500, 1500, 800] }
-          }
-        }
-      ]
-    },
-    {
-      "@id": "clinical_notes",
-      "@type": "cr:RecordSet",
-      "name": "Clinical Notes",
-      "description": "Narrative clinical documentation.",
-      "field": [
+          "@id": "lab_results",
+          "@type": "cr:RecordSet",
+          "name": "Lab Results",
+          "description": "Laboratory test results.",
+          "field": [
+             {
+              "@id": "lab_results/cholesterol",
+              "@type": "cr:Field",
+              "name": "Cholesterol",
+              "description": "Cholesterol level.",
+              "dataType": "sc:Float",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 100, "stat:max": 400, "stat:histogram": {}}
+            },
+            {
+              "@id": "lab_results/creatinine",
+              "@type": "cr:Field",
+              "name": "Creatinine",
+              "description": "Creatinine level.",
+              "dataType": "sc:Float",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 0.5, "stat:max": 5.0, "stat:histogram": {}}
+            },
+            {
+              "@id": "lab_results/egfr",
+              "@type": "cr:Field",
+              "name": "eGFR",
+              "description": "eGFR level.",
+              "dataType": "sc:Float",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 15, "stat:max": 120, "stat:histogram": {}}
+            },
+            {
+              "@id": "lab_results/hba1c",
+              "@type": "cr:Field",
+              "name": "HbA1c",
+              "description": "HbA1c level.",
+              "dataType": "sc:Float",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 4.0, "stat:max": 15.0, "stat:histogram": {}}
+            },
+            {
+              "@id": "lab_results/glucose",
+              "@type": "cr:Field",
+              "name": "Glucose",
+              "description": "Blood glucose level.",
+              "dataType": "sc:Float",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 70, "stat:max": 400, "stat:histogram": {}}
+            },
+             {
+              "@id": "lab_results/liver_enzymes",
+              "@type": "cr:Field",
+              "name": "Liver Enzymes",
+              "description": "Liver enzyme levels.",
+              "dataType": "sc:Float",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 10, "stat:max": 200, "stat:histogram": {}}
+            },
+            {
+              "@id": "lab_results/pathogen",
+              "@type": "cr:Field",
+              "name": "Pathogen",
+              "description": "Identified pathogen.",
+              "dataType": "sc:Text",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:category_frequencies": {"Influenza A":1}}
+            }
+          ]
+        },
         {
-          "@id": "clinical_notes/notes",
-          "@type": "cr:Field",
-          "name": "Notes",
-          "description": "Free-text clinician notes.",
-          "dataType": "sc:Text",
-          "source": { "fileObject": { "@id": "notes-file" }, "extract": { "column": "Notes" } },
-          "jsd:textDistribution": {
-            "@type": "jsd:TextDistribution", "jsd:field_name": "clinical_notes", "jsd:total_records_analyzed": 10000, "jsd:missing_count": 173, "jsd:language": "en",
-            "jsd:text_summary_stats": { "jsd:mean_tokens_per_record": 85.2, "jsd:median_tokens_per_record": 78, "jsd:total_unique_tokens": 12500 },
-            "jsd:vocabulary_size": 5,
-            "jsd:top_k_tokens": [
-              { "jsd:token": "patient", "jsd:frequency": 0.35 },
-              { "jsd:token": "admitted", "jsd:frequency": 0.25 },
-              { "jsd:token": "symptoms", "jsd:frequency": 0.20 },
-              { "jsd:token": "treatment", "jsd:frequency": 0.15 },
-              { "jsd:token": "discharge", "jsd:frequency": 0.05 }
-            ],
-            "jsd:token_probability_vector": [0.35, 0.25, 0.20, 0.15, 0.05]
-          }
+          "@id": "cognitive_assessment",
+          "@type": "cr:RecordSet",
+          "name": "Cognitive Assessment",
+          "description": "Cognitive test scores.",
+          "field": [
+            {
+              "@id": "cognitive_assessment/moca_score",
+              "@type": "cr:Field",
+              "name": "MoCA Score",
+              "description": "Montreal Cognitive Assessment score.",
+              "dataType": "sc:Integer",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 0, "stat:max": 30, "stat:histogram": {}}
+            }
+          ]
+        },
+        {
+          "@id": "tumor_markers",
+          "@type": "cr:RecordSet",
+          "name": "Tumor Markers",
+          "description": "Data related to tumors.",
+          "field": [
+            {
+              "@id": "tumor_markers/tumor_size",
+              "@type": "cr:Field",
+              "name": "Tumor Size",
+              "description": "Size of the tumor.",
+              "dataType": "sc:Float",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:min": 0.1, "stat:max": 20, "stat:histogram": {}}
+            },
+            {
+              "@id": "tumor_markers/cancer_stage",
+              "@type": "cr:Field",
+              "name": "Cancer Stage",
+              "description": "Stage of the cancer.",
+              "dataType": "sc:Text",
+              "stat:statistics": {"@type": "stat:Statistics", "stat:category_frequencies": {"Stage I":1}}
+            }
+          ]
+        },
+        {
+            "@id": "lung_function",
+            "name": "Lung Function Tests",
+            "@type": "cr:RecordSet",
+            "description": "Data from spirometry and other lung function tests.",
+            "field": [
+                {
+                    "@id": "lung_function/fev1",
+                    "@type": "cr:Field",
+                    "name": "FEV1",
+                    "description": "Forced Expiratory Volume in 1 second.",
+                    "dataType": "sc:Float",
+                    "stat:statistics": {"@type": "stat:Statistics", "stat:min": 0.5, "stat:max": 5.0, "stat:histogram": {}}
+                },
+                {
+                    "@id": "lung_function/fvc",
+                    "@type": "cr:Field",
+                    "name": "FVC",
+                    "description": "Forced Vital Capacity.",
+                    "dataType": "sc:Float",
+                    "stat:statistics": {"@type": "stat:Statistics", "stat:min": 1.0, "stat:max": 7.0, "stat:histogram": {}}
+                }
+            ]
+        },
+        {
+            "@id": "injury_details",
+            "name": "Injury Details",
+            "@type": "cr:RecordSet",
+            "description": "Details about physical injuries.",
+            "field": [
+                 {
+                    "@id": "injury_details/body_part",
+                    "@type": "cr:Field",
+                    "name": "Body Part",
+                    "description": "Affected body part.",
+                    "dataType": "sc:Text",
+                    "stat:statistics": {"@type": "stat:Statistics", "stat:category_frequencies": {"Knee":1}}
+                },
+                {
+                    "@id": "injury_details/procedure",
+                    "@type": "cr:Field",
+                    "name": "Procedure",
+                    "description": "Surgical procedure performed.",
+                    "dataType": "sc:Text",
+                    "stat:statistics": {"@type": "stat:Statistics", "stat:category_frequencies": {"Arthroplasty":1}}
+                }
+            ]
+        },
+        {
+          "@id": "clinical_notes",
+          "@type": "cr:RecordSet",
+          "name": "Clinical Notes",
+          "description": "Narrative clinical documentation.",
+          "field": [
+            {
+              "@id": "clinical_notes/notes",
+              "@type": "cr:Field",
+              "name": "Notes",
+              "description": "Free-text clinician notes.",
+              "dataType": "sc:Text",
+              "jsd:textDistribution": {}
+            }
+          ]
+        },
+        {
+          "@id": "medical_condition",
+          "name": "Medical Condition",
+          "@type": "cr:RecordSet",
+          "description": "Primary diagnosis or condition.",
+           "field": [
+             {
+                "@id": "medical_condition/diagnosis",
+                "@type": "cr:Field",
+                "name": "Diagnosis",
+                "description": "Primary diagnosis.",
+                "dataType": "sc:Text",
+                "stat:statistics": {"@type": "stat:Statistics", "stat:category_frequencies": {"None":1}}
+             }
+           ]
+        },
+        {
+          "@id": "medical_images",
+          "@type": "cr:RecordSet",
+          "name": "Medical Images",
+          "description": "Radiology images linked to patient records.",
+          "ex:imageStats": {},
+          "ex:annotationStats": {}
         }
       ]
     },
-    {
-      "@id": "medical_images",
-      "@type": "cr:RecordSet",
-      "name": "Medical Images",
-      "description": "Radiology images linked to patient records.",
-      "ex:imageStats": {
-        "@type": "ex:ImageStatistics",
-        "ex:numImages": 8500,
-        "ex:imageDimensions": { "minWidth": 1024, "maxWidth": 4096, "minHeight": 1024, "maxHeight": 4096, "avgWidth": 2048, "avgHeight": 2048, "aspectRatioDistribution": "1:1" },
-        "ex:colorMode": "grayscale", "ex:channels": 1,
-        "ex:fileSizeBytes": { "avg": 524288, "min": 131072, "max": 1048576 },
-        "ex:modality": "X-ray"
-      },
-      "ex:annotationStats": {
-        "@type": "ex:AnnotationStatistics",
-        "ex:numAnnotations": 32000, "ex:numClasses": 4, "ex:classes": ["nodule", "fracture", "opacity", "device"],
-        "ex:objectsPerImage": { "min": 0, "max": 6, "avg": 3.76, "median": 3 },
-        "ex:boundingBoxStats": { "avgRelativeWidth": 0.18, "avgRelativeHeight": 0.22, "avgAspectRatio": 0.82, "relativeAreaDistribution": "beta(2,5)", "shapeNotes": "rectangular" }
-      }
-    }
-  ]
-    },
-    "datasetId": "mock-dataset-id-2"
+    "datasetId": "mock-dataset-id-super"
   },
-  "requestId": "unique-request-id-12345",
+  "requestId": "unique-request-id-super",
   "timestamp": "2025-06-08T18:54:00.000Z"
 }
