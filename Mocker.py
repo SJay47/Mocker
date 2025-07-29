@@ -17,14 +17,18 @@ DEFAULT_TPL = ROOT_DIR / "templates" / "master_fingerprint_template.json"
 DEFAULT_OUTDIR = ROOT_DIR / "mock_outputs"
 
 API_CONFIG = {
-    "API_BASE_URL": "https://dev-ppfl-api.asclepyus.com",
-    "KEYCLOAK_TOKEN_URL": "https://dev-ppfl-auth.asclepyus.com/keycloak/admin/realms/PrimeCare/protocol/openid-connect/token",
+    "API_BASE_URL": "http://api.primecare.local",
+    "KEYCLOAK_TOKEN_URL": "http://auth.primecare.local:18080/realms/primecare/protocol/openid-connect/token",
     "KEYCLOAK_CLIENT_ID": "public-dev-ppfl-api-swagger",
     "ADMIN_USERNAME": "alice@demo.com",
-    "ADMIN_PASSWORD": "123",
+    "ADMIN_PASSWORD": "q",
     "ORGANIZATION_ID": "6770514c-b074-4b85-80c5-924b5ef77abb",
-    "DATASET_ID": "ad229b50-1a4f-47f8-b15a-5e34a12681d2"
+    "DATASET_ID": "ad229b50-1a4f-47f8-b15a-5e34a12681d2",
+    "CREATE_ORGANIZATION_ENDPOINT": "/api/organizations",
+    "CREATE_DATASET_ENDPOINT_TEMPLATE": "/api/organizations/{org_id}/datasets",
+    "CREATE_FINGERPRINT_ENDPOINT_TEMPLATE": "/api/organizations/{org_id}/datasets/{dataset_id}/fingerprints"
 }
+
 
 fake = Faker()
 random.seed()
@@ -203,12 +207,12 @@ def mock_numeric_stats(template: dict, params: Optional[Dict] = None) -> dict:
         bins[0] = round(stats["stat:min"], 2)
         bins[-1] = round(stats["stat:max"], 2)
         bins = sorted(list(set(bins)))
-        counts = [fake.random_int(100, 3000) for _ in range(len(bins))]
-        stats["stat:histogram"] = {
-            "stat:bins": bins,
-            "stat:counts": counts
-        }
-
+        if len(bins) > 1:
+            counts = [fake.random_int(100, 3000) for _ in range(len(bins) - 1)]
+        else:
+            counts = [] 
+        stats["stat:histogram"] = {"stat:bins": bins, "stat:counts": counts}
+        
     return stats
 
 def mock_categorical_stats(template: dict, params: Optional[Dict] = None) -> dict:
@@ -293,7 +297,7 @@ def generate_mock_data(node: Any, domain: Dict) -> Any:
                 if "jsd:textDistribution" in node:
                     domain_token_list = domain.get("jsd_tokens", [])
                     node["jsd:textDistribution"] = mock_jsd_stats(domain_token_list)
-                    
+
         if "ex:imageStats" in node:
             node["ex:imageStats"] = mock_image_stats({"modality": domain_fields.get("medical_images/modality")})
         if "ex:annotationStats" in node:
@@ -372,18 +376,81 @@ def get_access_token() -> Optional[str]:
         "password": API_CONFIG["ADMIN_PASSWORD"],
     }
     try:
+        print("🔑 Authenticating with Keycloak...")
         r = requests.post(API_CONFIG["KEYCLOAK_TOKEN_URL"], data=payload, timeout=10)
         r.raise_for_status()
+        print("    ✓ Authentication successful.")
         return r.json().get("access_token")
     except requests.RequestException as e:
-        print(f"Auth error: {e}")
+        print(f"    ✗ Auth error: {e}")
         return None
 
-def post_fingerprint(fp: Dict, token: str) -> bool:
-    url = f"{API_CONFIG['API_BASE_URL']}/api/organizations/{API_CONFIG['ORGANIZATION_ID']}/datasets/{API_CONFIG['DATASET_ID']}/fingerprints"
+def create_organization_via_api(token: str, org_name: str) -> Optional[str]:
+    url = f"{API_CONFIG['API_BASE_URL']}{API_CONFIG['CREATE_ORGANIZATION_ENDPOINT']}"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    payload = {
+        "data": {
+            "name": org_name,
+            "visibility": "Public", 
+            "visibleTo": []
+        }
+    }
     try:
-        r = requests.post(url, headers=headers, json=fp, timeout=15)
+        r = requests.post(url, headers=headers, json=payload, timeout=15)
+        r.raise_for_status()
+        response_data = r.json()
+        org_id = response_data.get("data", {}).get("id")
+        if org_id:
+            print(f"    ✓ Organization '{org_name}' created successfully with ID: {org_id}")
+            return org_id
+        else:
+            print(f"    ✗ Organization creation for '{org_name}' succeeded but no ID was returned.")
+            return None
+    except requests.RequestException as e:
+        error_body = e.response.text if hasattr(e, "response") and e.response else "No response body."
+        print(f"    ✗ Failed to create organization '{org_name}': {e}\n      Response Body: {error_body}")
+        return None
+
+def create_dataset_via_api(token: str, org_id: str, dataset_name: str, description: str) -> Optional[str]:
+    url = f"{API_CONFIG['API_BASE_URL']}{API_CONFIG['CREATE_DATASET_ENDPOINT_TEMPLATE'].format(org_id=org_id)}"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    payload = {
+        "data": {
+            "name": dataset_name,
+            "description": description
+        }
+    }
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=15)
+        r.raise_for_status()
+        response_data = r.json()
+        dataset_id = response_data.get("data", {}).get("id")
+        if dataset_id:
+            print(f"    ✓ Dataset '{dataset_name}' created successfully with ID: {dataset_id}")
+            return dataset_id
+        else:
+            print(f"    ✗ Dataset creation for '{dataset_name}' succeeded but no ID was returned.")
+            return None
+    except requests.RequestException as e:
+        error_body = e.response.text if hasattr(e, "response") and e.response else "No response body."
+        print(f"    ✗ Failed to create dataset '{dataset_name}': {e}\n      Response Body: {error_body}")
+        return None
+
+def post_fingerprint_via_api(token: str, org_id: str, dataset_id: str, fingerprint: Dict) -> bool:
+    url = f"{API_CONFIG['API_BASE_URL']}{API_CONFIG['CREATE_FINGERPRINT_ENDPOINT_TEMPLATE'].format(org_id=org_id, dataset_id=dataset_id)}"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    api_payload = {
+        "data": {
+            "type": fingerprint["data"]["type"],
+            "version": fingerprint["data"]["version"],
+            "candidateSearchVisibility": fingerprint["data"]["candidateSearchVisibility"],
+            "isAnonymous": fingerprint["data"]["isAnonymous"],
+            "rawFingerprintJson": fingerprint["data"]["rawFingerprintJson"]
+        }
+    }
+    
+    try:
+        r = requests.post(url, headers=headers, json=api_payload, timeout=15)
         r.raise_for_status()
         print(f"    ✓ POST successful. Response: {r.status_code}")
         return True
@@ -405,37 +472,81 @@ def save_fingerprint(fp: Dict, filename: str, outdir: Path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-c", "--count", type=int, default=50, help="Number of mocks to generate.")
+    ap.add_argument("-c", "--count", type=int, default=500, help="Total number of mock fingerprints to generate.")
+    ap.add_argument("--orgs", type=int, default=7, help="Number of organizations to create.")
+    ap.add_argument("--datasets-per-org", type=int, default=2, help="Number of datasets to create per organization.")
     ap.add_argument("-o", "--output-dir", type=Path, default=DEFAULT_OUTDIR)
     ap.add_argument("-t", "--template-file", type=Path, default=DEFAULT_TPL)
-    ap.add_argument("--send", action="store_true", help="Send generated fingerprints to the API.")
+    ap.add_argument("--send", action="store_true", help="Send generated fingerprints to the API after creating orgs and datasets.")
     args = ap.parse_args()
 
-    master = read_template(args.template_file)
+    master_template = read_template(args.template_file)
     weighted_profiles = [p for p in FINGERPRINT_PROFILES for _ in range(p["weight"])]
+    if args.send:
 
-    token = get_access_token() if args.send else None
-    if args.send and not token:
-        print("Unable to fetch token ─ mocks will be generated locally only.")
-        args.send = False
+        created_organizations = []
+        
+        token = get_access_token()
+        if not token:
+            print("\n✗ Unable to fetch auth token. Cannot proceed with API actions.")
+            return
 
-    print(f"Generating {args.count} mock fingerprint(s) from {args.template_file.name}")
-    for i in range(1, args.count + 1):
-        domain = random.choice(MEDICAL_DOMAINS)
-        profile = random.choice(weighted_profiles)
-        print(f"  • ({i}/{args.count}) Domain: {domain['name']}, Profile: {profile['name']}")
+        print("\n--- STAGE 1: Creating Organizations and Datasets via API ---")
+        org_dataset_map = []
+        for i in range(1, args.orgs + 1):
+            org_name = f"Mock-API-Org-{i}-{fake.company_suffix().lower()}"
+            print(f"  • ({i}/{args.orgs}) Creating Organization: {org_name}")
+            org_id = create_organization_via_api(token, org_name)
+            if org_id:
+                created_organizations.append({'name': org_name, 'id': org_id})
 
-        fp = create_fingerprint(master, profile, domain)
+                for j in range(1, args.datasets_per_org + 1):
+                    dataset_name = f"Dataset {j} for {org_name}"
+                    dataset_desc = f"A mocked dataset containing {random.choice(MEDICAL_DOMAINS)['name']} data."
+                    print(f"    • ({j}/{args.datasets_per_org}) Creating Dataset: {dataset_name}")
+                    dataset_id = create_dataset_via_api(token, org_id, dataset_name, dataset_desc)
+                    if dataset_id:
+                        org_dataset_map.append({"org_id": org_id, "dataset_id": dataset_id, "org_name": org_name})
+        
+        if not org_dataset_map:
+            print("\n✗ No organizations or datasets were created. Aborting fingerprint generation.")
+            return
 
-        fp["data"]["datasetId"] = f"mock-dataset-id-{fake.uuid4()}"
+        print(f"\n--- STAGE 2: Generating and Posting {args.count} Fingerprints ---")
+        for i in range(1, args.count + 1):
+            target = random.choice(org_dataset_map)
+            domain = random.choice(MEDICAL_DOMAINS)
+            profile = random.choice(weighted_profiles)
+            
+            print(f"  • ({i}/{args.count}) Generating fingerprint for Org '{target['org_name']}'...")
+            print(f"    (Domain: {domain['name']}, Profile: {profile['name']})")
+            
+            fp = create_fingerprint(master_template, profile, domain)
+            post_fingerprint_via_api(token, target["org_id"], target["dataset_id"], fp)
+            
+            fname = f"api_mock_{domain['name']}_{profile['name']}_{i}.json"
+            save_fingerprint(fp, fname, args.output_dir)
 
-        fname = f"mock_{domain['name']}_{profile['name']}_{i}.json"
-        save_fingerprint(fp, fname, args.output_dir)
-
-        if args.send and token:
-            post_fingerprint(fp, token)
-
-    print(f"\nSuccessfully generated {args.count} mocks in directory: {args.output_dir}")
+    else:
+        print(f"Generating {args.count} mock fingerprint(s) locally from {args.template_file.name}")
+        for i in range(1, args.count + 1):
+            domain = random.choice(MEDICAL_DOMAINS)
+            profile = random.choice(weighted_profiles)
+            print(f"  • ({i}/{args.count}) profile: {profile['name']}, domain: {domain['name']}")
+            
+            fp = create_fingerprint(master_template, profile, domain)
+            fp["data"]["datasetId"] = f"mock-dataset-id-{fake.uuid4()}"
+            
+            fname = f"local_mock_{domain['name']}_{profile['name']}_{i}.json"
+            save_fingerprint(fp, fname, args.output_dir)
+    if args.send and created_organizations:
+        print("\n--- API Creation Summary ---")
+        print(f"Successfully created {len(created_organizations)} organizations:")
+        for org in created_organizations:
+            print(f"  - Name: {org['name']}, ID: {org['id']}")
+        print("--------------------------")
+        
+    print(f"\n✅ Successfully completed operations.")
 
 if __name__ == "__main__":
     main()
